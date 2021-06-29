@@ -1,4 +1,4 @@
-package mylib
+package glec2.mylib
 
 import spinal.core._
 import spinal.sim._
