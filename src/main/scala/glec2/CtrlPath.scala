@@ -3,12 +3,12 @@ package glec2
 import spinal.core._
 import spinal.lib._
 
-
-
 case class ICacheBus(implicit conf : CoreParams) extends Bundle with IMasterSlave {
   val pc = UInt(conf.pcWidth bits)
+  val ins = Bits(conf.xlen bits)
   def asMaster(): Unit = {
     out (pc)
+    in (ins)
   }
 }
 
