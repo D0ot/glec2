@@ -23,6 +23,8 @@ case class InstructionBus (implicit conf : CoreParams) extends Bundle with IMast
 }
 case class ICache(implicit conf : CoreParams) extends Component {
   val io = new Bundle {
-    val ibus = slave (ICacheBus())
+    // instruction cache bus
+    val icb = slave (ICacheBus())
+
   }
 }

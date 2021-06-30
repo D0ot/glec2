@@ -20,7 +20,7 @@ case class Ctrl2DataIO(implicit conf : CoreParams) extends Bundle with IMasterSl
 
 case class CtrlPath(implicit conf : CoreParams) extends Component {
   val io = new Bundle {
-    val ibus = master (ICacheBus())
+    val icb = master (ICacheBus())
     val c2d = master (Ctrl2DataIO())
     val d2c = slave (Data2CtrlIO())
   }

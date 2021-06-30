@@ -27,6 +27,6 @@ case class DataBus (implicit conf : CoreParams) extends Bundle with IMasterSlave
 
 case class DCache(implicit conf : CoreParams) extends Component {
   val io = new Bundle {
-    val dbus = slave (DCacheBus())
+    val dcb = slave (DCacheBus())
   }
 }

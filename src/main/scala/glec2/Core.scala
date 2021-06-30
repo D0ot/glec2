@@ -19,7 +19,7 @@ class GlecCore(implicit conf : CoreParams) extends Component{
   dataPath.io.c2d <> ctrlPath.io.c2d
   dataPath.io.d2c <> ctrlPath.io.d2c
 
-  ctrlPath.io.ibus <> icache.io.ibus
-  dataPath.io.dbus <> dcache.io.dbus
+  ctrlPath.io.icb <> icache.io.icb
+  dataPath.io.dcb <> dcache.io.dcb
   
 }

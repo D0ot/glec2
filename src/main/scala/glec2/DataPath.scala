@@ -24,7 +24,7 @@ case class Data2CtrlIO (implicit conf : CoreParams) extends Bundle with IMasterS
 
 case class DataPath (implicit conf : CoreParams) extends Component {
   val io = new Bundle {
-    val dbus = master (DCacheBus())
+    val dcb = master (DCacheBus())
     val d2c = master (Data2CtrlIO())
     val c2d = slave (Ctrl2DataIO())
   }
