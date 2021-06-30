@@ -3,7 +3,7 @@ package glec2
 import spinal.core._
 import spinal.lib._
 
-case class RegFileIO(implicit val conf: GlecCoreParams) extends Bundle {
+case class RegFileIO(implicit val conf: CoreParams) extends Bundle {
   val rs1_addr = in UInt(5 bits)
   val rs1_data = out Bits(conf.xlen bits)
 
@@ -20,7 +20,7 @@ case class RegFileIO(implicit val conf: GlecCoreParams) extends Bundle {
   val wen = in Bool()
 }
 
-case class RegFile(implicit val conf : GlecCoreParams) extends Component {
+case class RegFile(implicit val conf : CoreParams) extends Component {
   val io = RegFileIO()
 
   val regFile = Mem(Bits(conf.xlen bits), 32) randBoot()

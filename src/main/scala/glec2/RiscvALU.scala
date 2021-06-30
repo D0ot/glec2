@@ -7,7 +7,7 @@ object ALUOpcode extends SpinalEnum(binarySequential) {
   val ADD, SLL, SLT, SLTU, XOR, SRL, OR, AND = newElement()
 }
 
-case class ALUIO(implicit conf : GlecCoreParams) extends Bundle {
+case class ALUIO(implicit conf : CoreParams) extends Bundle {
   val opcode = in (ALUOpcode)
   val rs1 = in Bits(conf.xlen bits)
   val rs2 = in Bits(conf.xlen bits)
@@ -23,7 +23,7 @@ case class ALUIO(implicit conf : GlecCoreParams) extends Bundle {
 }
 
 
-case class ALU(implicit conf : GlecCoreParams) extends Component {
+case class ALU(implicit conf : CoreParams) extends Component {
   val io = ALUIO()
 
   val add = io.rs1.asSInt + Mux(io.bit30, ~io.rs2.asSInt, io.rs2.asSInt) + Mux(io.bit30, S(1), S(0))

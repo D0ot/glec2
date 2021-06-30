@@ -11,7 +11,7 @@ class GlecTopLevel extends Component {
 
 object GlecTopLevel {
   def main(args: Array[String]) {
-    implicit val glecCoreParams = GlecCoreParams(32, false);
+    implicit val glecCoreParams = CoreParams(32, false);
     SpinalVerilog(new RegFile())
   }
 }

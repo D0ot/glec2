@@ -7,4 +7,6 @@ case class CoreParams(xlen : Int, rv64: Boolean){
   val d1cacheSize = 8192;
   
   val pcWidth = 32;
+
+  val pcInitVal = 0;
 }
