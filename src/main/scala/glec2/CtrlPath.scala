@@ -115,4 +115,7 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   io.c2d.reg_wen := wb_ic.reg_wen
   io.c2d.wb_sel := wb_ic.wb_sel
   io.c2d.load_type := wb_ic.load_type
+
+  // next pc calcuation
+  pc := pc + 4
 }

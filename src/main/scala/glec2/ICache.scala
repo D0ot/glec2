@@ -2,6 +2,7 @@ package glec2
 
 import spinal.core._
 import spinal.lib._
+import glec2.lib.HexReader
 
 case class CoreInstructionCmd (implicit conf : CoreParams) extends Bundle {
   val pc = UInt(conf.pcWidth bits)
@@ -27,6 +28,8 @@ case class ICache(implicit conf : CoreParams) extends Component {
     val icb = slave (ICacheBus())
 
   }
-  val icache = Mem(Bits(conf.xlen bits), conf.l1cacheSize) randBoot()
-  io.icb.ins := icache.readSync((io.icb.pc(31 downto 2)).resized)
+  val insPath = "/home/doot/projects/glec/riscv/program.bin"
+  //val icache = Mem(Bits(conf.xlen bits), conf.l1cacheSize)
+  val icache = Mem(UInt(conf.xlen bits), HexReader.loadInsToUInt(insPath))
+  io.icb.ins := icache.readSync((io.icb.pc(31 downto 2)).resized).asBits
 }
