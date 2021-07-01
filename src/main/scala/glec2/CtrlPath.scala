@@ -70,12 +70,14 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
     val d2c = slave (Data2CtrlIO())
   }
 
+  val rest_done = RegNext(True) init(False)
+
 
   val pc = Reg(UInt(conf.pcWidth bits)) init(conf.pcInitVal)
   io.icb.pc := pc
 
   // ID stage
-  val dec_ir = Reg(Bits(conf.xlen bits))
+  val dec_ir = Reg(Bits(conf.xlen bits)) init(Misc.NOP)
   val dec_pc = RegNext(pc)
   val dec_ic = InstructionCtrl(conf, dec_ir, dec_pc)
 
@@ -87,7 +89,8 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   io.c2d.imm := dec_ic.imm
 
   // EXE stage
-  val exe_ir = Reg(Bits(conf.xlen bits))
+  val exe_ir = Reg(Bits(conf.xlen bits)) init(Misc.NOP)
+  exe_ir := dec_ir
   val exe_pc = RegNext(dec_pc)
   val exe_ic = InstructionCtrl(conf, exe_ir, exe_pc)
 
@@ -99,7 +102,8 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   io.c2d.exe_pc := exe_pc
 
   // MEM stage
-  val mem_ir = Reg(Bits(conf.xlen bits))
+  val mem_ir = Reg(Bits(conf.xlen bits)) init(Misc.NOP)
+  mem_ir := exe_ir
   val mem_pc = RegNext(exe_pc)
   val mem_ic = InstructionCtrl(conf, mem_ir, mem_pc)
 
@@ -107,7 +111,8 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   io.c2d.store_type := mem_ic.store_type
 
   // WB stage
-  val wb_ir = Reg(Bits(conf.xlen bits))
+  val wb_ir = Reg(Bits(conf.xlen bits)) init(Misc.NOP)
+  wb_ir := mem_ir
   val wb_pc = RegNext(mem_pc)
   val wb_ic = InstructionCtrl(conf, wb_ir, wb_pc)
 

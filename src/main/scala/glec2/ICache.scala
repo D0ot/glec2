@@ -31,5 +31,8 @@ case class ICache(implicit conf : CoreParams) extends Component {
   val insPath = "/home/doot/projects/glec/riscv/program.bin"
   //val icache = Mem(Bits(conf.xlen bits), conf.l1cacheSize)
   val icache = Mem(UInt(conf.xlen bits), HexReader.loadInsToUInt(insPath))
-  io.icb.ins := icache.readSync((io.icb.pc(31 downto 2)).resized).asBits
+
+  val reset_done = RegNext(True) init(False)
+  val rdata = icache.readSync((io.icb.pc(31 downto 2)).resized).asBits
+  io.icb.ins := Mux(reset_done, rdata, Misc.NOP)
 }

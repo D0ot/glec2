@@ -3,6 +3,10 @@ package glec2
 import spinal.core._
 import spinal.lib._
 
+object Misc {
+  def NOP = B(0x13, 32 bits)
+}
+
 object InsOpcode {
   def LUI       = M"-------------------------0110111"
   def AUIPC     = M"-------------------------0010111"
