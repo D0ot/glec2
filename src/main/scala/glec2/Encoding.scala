@@ -63,6 +63,164 @@ object IMM {
   }
 }
 
-case class InstructionCtrl() extends Bundle{
+
+object BranchCond extends SpinalEnum {
+  val EQ, NE, LT, GE, LTU, GEU = newElement()
+  defaultEncoding = SpinalEnumEncoding("staticEncoding")(
+    EQ -> 0,
+    NE -> 1,
+    LT -> 4,
+    GE -> 5,
+    LTU -> 6,
+    GEU -> 7
+  )
 }
 
+object PCNextSel extends SpinalEnum{
+  val seq, jalr, br_jal = newElement()
+}
+
+object ALUOp1Sel extends SpinalEnum {
+  val reg, zero = newElement()
+}
+
+object ALUOp2Sel extends SpinalEnum {
+  val reg, imm = newElement()
+}
+
+// pcpi is "PC Plus IMM"
+object WriteBackSel extends SpinalEnum {
+  val alu, mem, pp4, pcpi = newElement()
+}
+
+object LoadType extends SpinalEnum {
+  val word, shalf, uhalf, sbyte, ubyte = newElement()
+  defaultEncoding = SpinalEnumEncoding("staticEncoding")(
+    sbyte -> 0,
+    shalf -> 1,
+    word -> 2,
+    ubyte -> 4,
+    uhalf -> 5
+  )
+}
+
+object StoreType extends SpinalEnum {
+  val word, half, byte = newElement()
+  defaultEncoding = SpinalEnumEncoding("staticEncoding")(
+    byte -> 0,
+    half -> 1,
+    word -> 2
+  )
+}
+
+class InstructionCtrl(implicit conf : CoreParams) extends Bundle{
+  val ins = Bits(conf.xlen bits)
+  val pc = UInt(conf.xlen bits)
+  val rs1 = UInt(5 bits)
+  val rs2 = UInt(5 bits)
+  val rd = UInt(5 bits)
+  val funct3 = Bits(3 bits)
+  val imm = Bits(32 bits)
+  
+  val pre_imm = new IMM()
+  
+  val pc_next_sel = PCNextSel()
+  val is_branch = Bool()
+  val bc = BranchCond()
+
+  val alu_opcode = ALUOpcode()
+  val alu_op1_sel = ALUOp1Sel()
+  val alu_op2_sel = ALUOp2Sel()
+  val reg_wen = Bool()
+
+  val wb_sel = WriteBackSel()
+
+  val load_type = LoadType()
+  val store_type = StoreType()
+  val dwen = Bool()
+
+  val invalid = Bool()
+}
+
+object InstructionCtrl {
+  def apply(implicit conf : CoreParams, ins: Bits, pc: UInt) : InstructionCtrl = {
+    val ins_ctrl = new InstructionCtrl()
+    ins_ctrl.pc := pc
+    ins_ctrl.ins := ins
+
+    ins_ctrl.rs1 := ins(19 downto 15).asUInt
+    ins_ctrl.rs2 := ins(24 downto 20).asUInt
+    ins_ctrl.rd := ins(11 downto 7).asUInt
+    ins_ctrl.funct3 := ins(14 downto 12).asBits
+    ins_ctrl.pre_imm.load(ins)
+    ins_ctrl.imm := ins_ctrl.pre_imm.i_sext
+
+    ins_ctrl.pc_next_sel := PCNextSel.seq
+    ins_ctrl.is_branch := False
+
+    ins_ctrl.alu_opcode := ALUOpcode.ADD
+    ins_ctrl.alu_op1_sel := ALUOp1Sel.reg
+    ins_ctrl.alu_op2_sel := ALUOp2Sel.reg
+    ins_ctrl.reg_wen := True
+
+    ins_ctrl.wb_sel := WriteBackSel.alu
+
+    ins_ctrl.load_type := LoadType.word
+    ins_ctrl.store_type := StoreType.word
+    ins_ctrl.dwen := False
+
+
+    when(ins === InsOpcode.LUI) {
+      ins_ctrl.alu_op1_sel := ALUOp1Sel.zero
+      ins_ctrl.alu_op2_sel := ALUOp2Sel.imm
+      ins_ctrl.imm := ins_ctrl.pre_imm.u_imm
+      
+    } elsewhen(ins === InsOpcode.AUIPC) {
+      // ALU need not to work
+      ins_ctrl.imm := ins_ctrl.pre_imm.u_imm
+      ins_ctrl.wb_sel := WriteBackSel.pcpi
+
+    } elsewhen(ins === InsOpcode.JAL) {
+      ins_ctrl.imm := ins_ctrl.pre_imm.j_sext
+      ins_ctrl.wb_sel := WriteBackSel.pp4
+      ins_ctrl.pc_next_sel := PCNextSel.br_jal
+
+    } elsewhen(ins === InsOpcode.JALR) {
+      ins_ctrl.alu_op2_sel := ALUOp2Sel.imm
+      ins_ctrl.imm := ins_ctrl.pre_imm.i_sext
+      ins_ctrl.wb_sel := WriteBackSel.pp4
+      ins_ctrl.pc_next_sel := PCNextSel.jalr
+
+    } elsewhen(ins === InsOpcode.B_BASE) {
+      ins_ctrl.imm := ins_ctrl.pre_imm.b_sext
+      ins_ctrl.bc.assignFromBits(ins_ctrl.funct3)
+      ins_ctrl.is_branch := True
+      ins_ctrl.pc_next_sel := PCNextSel.br_jal
+
+    } elsewhen(ins === InsOpcode.L_BASE) {
+      ins_ctrl.alu_op2_sel := ALUOp2Sel.imm
+      ins_ctrl.imm := ins_ctrl.pre_imm.i_sext
+      ins_ctrl.wb_sel := WriteBackSel.mem
+      ins_ctrl.load_type.assignFromBits(ins_ctrl.funct3)
+
+    } elsewhen(ins === InsOpcode.S_BASE) {
+      ins_ctrl.alu_op2_sel := ALUOp2Sel.imm
+      ins_ctrl.imm := ins_ctrl.pre_imm.s_sext
+      ins_ctrl.dwen := True
+      ins_ctrl.store_type.assignFromBits(ins_ctrl.funct3)
+
+    } elsewhen(ins === InsOpcode.ALI_BASE) {
+      ins_ctrl.alu_op2_sel := ALUOp2Sel.imm
+      ins_ctrl.imm := ins_ctrl.pre_imm.i_sext
+      ins_ctrl.alu_opcode.assignFromBits(ins_ctrl.funct3)
+
+    } elsewhen(ins === InsOpcode.ALI_BASE) {
+      ins_ctrl.alu_opcode.assignFromBits(ins_ctrl.funct3)
+
+    } otherwise {
+      ins_ctrl.invalid := True
+    }
+
+    ins_ctrl
+  }
+}

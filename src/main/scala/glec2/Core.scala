@@ -2,12 +2,11 @@ package glec2
 
 import spinal.core._
 import spinal.lib._
-import spinal.lib.soc.pinsec.Pinsec
 
 
 class GlecCore(implicit conf : CoreParams) extends Component{
   val io = new Bundle {
-    val dummy_port = UInt(32 bits)
+    val sysbus = UInt(1 bits)
   }
 
   val dataPath = DataPath()
