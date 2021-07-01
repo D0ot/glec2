@@ -20,7 +20,7 @@ case class Ctrl2DataIO(implicit conf : CoreParams) extends Bundle with IMasterSl
   val rs1 = UInt(5 bits)
   val rs2 = UInt(5 bits)
   val imm = Bits(32 bits)
-  
+
   // EXE stage
   val alu_op1_sel = ALUOp1Sel()
   val alu_op2_sel = ALUOp2Sel()
@@ -67,23 +67,55 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
     val c2d = master (Ctrl2DataIO())
     val d2c = slave (Data2CtrlIO())
   }
+
+
   val pc = Reg(UInt(conf.pcWidth bits)) init(conf.pcInitVal)
+  io.icb.pc := pc
 
-  val dec_ir = Reg(Bits(conf.xlen bits)) 
+  // ID stage
+  val dec_ir = Reg(Bits(conf.xlen bits))
   val dec_pc = RegNext(pc)
+  val dec_ic = InstructionCtrl(conf, dec_ir, dec_pc)
 
+  dec_ir := io.icb.ins
   io.icb.pc := pc
   dec_ir := io.icb.ins
 
-  val dec_ic = InstructionCtrl(conf, dec_ir, dec_pc)
 
-  // decode stage
   io.c2d.rs1 := dec_ic.rs1
   io.c2d.rs2 := dec_ic.rs2
   io.c2d.imm := dec_ic.imm
+
+  // EXE stage
+  val exe_ir = Reg(Bits(conf.xlen bits))
+  val exe_pc = RegNext(dec_pc)
+  val exe_ic = InstructionCtrl(conf, exe_ir, exe_pc)
+
+  io.c2d.alu_op1_sel := exe_ic.alu_op1_sel
+  io.c2d.alu_op2_sel := exe_ic.alu_op2_sel
+  io.c2d.alu_opcode := exe_ic.alu_opcode
+  io.c2d.ins_bit30 := exe_ic.ins_bit30
+  io.c2d.is_branch := exe_ic.is_branch
+  io.c2d.exe_pc := exe_pc
+
+  // MEM stage
+  val mem_ir = Reg(Bits(conf.xlen bits))
+  val mem_pc = RegNext(exe_pc)
+  val mem_ic = InstructionCtrl(conf, mem_ir, mem_pc)
+
+  io.c2d.wen := mem_ic.dwen
+  io.c2d.store_type := mem_ic.store_type
+
+  // WB stage
+  val wb_ir = Reg(Bits(conf.xlen bits))
+  val wb_pc = RegNext(mem_pc)
+  val wb_ic = InstructionCtrl(conf, wb_ir, wb_pc)
+
+  io.c2d.rd := wb_ic.rd
+  io.c2d.reg_wen := wb_ic.reg_wen
+  io.c2d.wb_sel := wb_ic.wb_sel
+  io.c2d.load_type := wb_ic.load_type
 }
-
-
 
 
 
