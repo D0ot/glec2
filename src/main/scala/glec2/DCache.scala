@@ -30,14 +30,11 @@ case class DCache(implicit conf : CoreParams) extends Component {
     val dcb = slave (DCacheBus())
   }
 
-  val addrStage = RegNext(io.dcb.addr, U(conf.pcInitVal))
-  val wenStage = RegNext(io.dcb.wen, False)
-  val wdataStage = RegNext(io.dcb.wdata)
   val dcache = Mem(Bits(conf.xlen bits), conf.d1cacheSize) randBoot()
 
-  io.dcb.rdata := dcache.readSync(addrStage)
+  io.dcb.rdata := dcache.readSync(io.dcb.addr)
 
-  when(wenStage) {
-    dcache.write(addrStage, wdataStage)
+  when(io.dcb.wen) {
+    dcache.write(io.dcb.addr, io.dcb.wdata)
   }
 }

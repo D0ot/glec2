@@ -27,7 +27,6 @@ case class ICache(implicit conf : CoreParams) extends Component {
     val icb = slave (ICacheBus())
 
   }
-  val pcReg = RegNext(io.icb.pc, U(conf.pcInitVal))
   val icache = Mem(Bits(conf.xlen bits), conf.l1cacheSize) randBoot()
-  io.icb.ins := icache.readSync(pcReg)
+  io.icb.ins := icache.readSync(io.icb.pc)
 }

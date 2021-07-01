@@ -120,6 +120,7 @@ class InstructionCtrl(implicit conf : CoreParams) extends Bundle{
   val rs2 = UInt(5 bits)
   val rd = UInt(5 bits)
   val funct3 = Bits(3 bits)
+  val ins_bit30 = Bool()
   val imm = Bits(32 bits)
   
   val pre_imm = new IMM()
@@ -152,6 +153,7 @@ object InstructionCtrl {
     ins_ctrl.rs2 := ins(24 downto 20).asUInt
     ins_ctrl.rd := ins(11 downto 7).asUInt
     ins_ctrl.funct3 := ins(14 downto 12).asBits
+    ins_ctrl.ins_bit30 := ins(30)
     ins_ctrl.pre_imm.load(ins)
     ins_ctrl.imm := ins_ctrl.pre_imm.i_sext
 

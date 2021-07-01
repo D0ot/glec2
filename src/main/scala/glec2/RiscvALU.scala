@@ -9,8 +9,8 @@ object ALUOpcode extends SpinalEnum(binarySequential) {
 
 case class ALUIO(implicit conf : CoreParams) extends Bundle {
   val opcode = in (ALUOpcode)
-  val rs1 = in Bits(conf.xlen bits)
-  val rs2 = in Bits(conf.xlen bits)
+  val op1 = in Bits(conf.xlen bits)
+  val op2 = in Bits(conf.xlen bits)
   val result = out Bits(conf.xlen bits)
   val add = out Bits(conf.xlen bits)
   
@@ -30,22 +30,22 @@ case class ALU(implicit conf : CoreParams) extends Component {
     (io.opcode === ALUOpcode.SLTU) ||
     ((io.opcode === ALUOpcode.ADD) && io.bit30)
 
-  val add = io.rs1.asSInt + Mux(doSub, ~io.rs2.asSInt, io.rs2.asSInt) + Mux(doSub, S(1), S(0))
+  val add = io.op1.asSInt + Mux(doSub, ~io.op2.asSInt, io.op2.asSInt) + Mux(doSub, S(1), S(0))
   
-  val less = Mux(io.rs1.msb === io.rs2.msb, add.msb,
-    Mux(io.opcode === ALUOpcode.SLTU, io.rs2.msb, io.rs1.msb))
+  val less = Mux(io.op1.msb === io.op2.msb, add.msb,
+    Mux(io.opcode === ALUOpcode.SLTU, io.op2.msb, io.op1.msb))
 
-  val shamt = io.rs2(4 downto 0).asUInt
+  val shamt = io.op2(4 downto 0).asUInt
 
 
   io.result := io.opcode.mux(
     ALUOpcode.ADD -> (add.asBits),
-    ALUOpcode.AND -> (io.rs1 & io.rs2),
-    ALUOpcode.OR -> (io.rs1 | io.rs2),
-    ALUOpcode.XOR -> (io.rs1 ^ io.rs2),
-    ALUOpcode.SLL -> (io.rs1 |<< shamt),
+    ALUOpcode.AND -> (io.op1 & io.op2),
+    ALUOpcode.OR -> (io.op1 | io.op2),
+    ALUOpcode.XOR -> (io.op1 ^ io.op2),
+    ALUOpcode.SLL -> (io.op1 |<< shamt),
     (ALUOpcode.SLT, ALUOpcode.SLTU) -> less.asBits.resized,
-    ALUOpcode.SRL -> (Mux(io.bit30, (io.rs1.asSInt >> shamt), (io.rs1.asSInt |>> shamt))).asBits
+    ALUOpcode.SRL -> (Mux(io.bit30, (io.op1.asSInt >> shamt), (io.op1.asSInt |>> shamt))).asBits
   )
 
   io.add := add.asBits
