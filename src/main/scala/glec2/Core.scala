@@ -6,7 +6,6 @@ import spinal.lib._
 
 class GlecCore(implicit conf : CoreParams) extends Component{
   val io = new Bundle {
-    val sysbus = UInt(1 bits)
   }
 
   val dataPath = DataPath()

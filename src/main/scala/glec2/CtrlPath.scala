@@ -47,7 +47,9 @@ case class Ctrl2DataIO(implicit conf : CoreParams) extends Bundle with IMasterSl
     out(alu_op1_sel)
     out(alu_op2_sel)
     out(alu_opcode)
+    out(ins_bit30)
     out(is_branch)
+    out(exe_pc)
 
     out(wen)
     out(store_type)
@@ -77,8 +79,6 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   val dec_pc = RegNext(pc)
   val dec_ic = InstructionCtrl(conf, dec_ir, dec_pc)
 
-  dec_ir := io.icb.ins
-  io.icb.pc := pc
   dec_ir := io.icb.ins
 
 
@@ -116,25 +116,3 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   io.c2d.wb_sel := wb_ic.wb_sel
   io.c2d.load_type := wb_ic.load_type
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

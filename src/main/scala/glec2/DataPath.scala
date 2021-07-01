@@ -8,11 +8,13 @@ case class DCacheBus (implicit conf : CoreParams) extends Bundle with IMasterSla
   val wen = Bool()
   val rdata = Bits(conf.xlen bits)
   val wdata = Bits(conf.xlen bits)
+  val store_type = StoreType()
 
   def asMaster(): Unit = {
     out (addr)
     out (wen)
     out (wdata)
+    out (store_type)
     in (rdata)
   }
 }
@@ -49,7 +51,7 @@ case class DataPath (implicit conf : CoreParams) extends Component {
 
   exe_alu_op1 := io.c2d.alu_op1_sel.mux(
     ALUOp1Sel.reg -> regFile.io.rs1_data,
-    ALUOp1Sel.zero -> B"0"
+    ALUOp1Sel.zero -> B(0, conf.xlen bits)
   )
 
   exe_alu_op2 := io.c2d.alu_op2_sel.mux(
@@ -66,7 +68,7 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   alu.io.opcode := io.c2d.alu_opcode
   alu.io.bit30 := io.c2d.ins_bit30
 
-  io.d2c.alu_eq := alu.io.add === B"0"
+  io.d2c.alu_eq := alu.io.add === B(0, conf.xlen bits)
   io.d2c.alu_less := alu.io.result(0)
 
   val mem_alu_ret = Reg(Bits(conf.xlen bits))
@@ -90,7 +92,7 @@ case class DataPath (implicit conf : CoreParams) extends Component {
     WriteBackSel.alu -> mem_alu_ret,
     WriteBackSel.mem -> io.dcb.rdata,
     WriteBackSel.pcpi -> mem_pcpi.asBits,
-    WriteBackSel.pp4 -> (mem_pc + U"4").asBits
+    WriteBackSel.pp4 -> (mem_pc + U(4, conf.pcWidth bits)).asBits
   )
 
   regFile.io.wdata := wb_dat

@@ -28,5 +28,5 @@ case class ICache(implicit conf : CoreParams) extends Component {
 
   }
   val icache = Mem(Bits(conf.xlen bits), conf.l1cacheSize) randBoot()
-  io.icb.ins := icache.readSync(io.icb.pc)
+  io.icb.ins := icache.readSync((io.icb.pc(31 downto 2)).resized)
 }

@@ -105,11 +105,13 @@ object LoadType extends SpinalEnum {
 }
 
 object StoreType extends SpinalEnum {
-  val word, half, byte = newElement()
+  val word, half, byte, dummy = newElement()
   defaultEncoding = SpinalEnumEncoding("staticEncoding")(
     byte -> 0,
     half -> 1,
-    word -> 2
+    word -> 2,
+    
+    dummy -> 5
   )
 }
 
@@ -154,6 +156,7 @@ object InstructionCtrl {
     ins_ctrl.rd := ins(11 downto 7).asUInt
     ins_ctrl.funct3 := ins(14 downto 12).asBits
     ins_ctrl.ins_bit30 := ins(30)
+    ins_ctrl.bc := BranchCond.EQ
     ins_ctrl.pre_imm.load(ins)
     ins_ctrl.imm := ins_ctrl.pre_imm.i_sext
 
@@ -171,7 +174,7 @@ object InstructionCtrl {
     ins_ctrl.store_type := StoreType.word
     ins_ctrl.dwen := False
 
-
+    ins_ctrl.invalid := False
     when(ins === InsOpcode.LUI) {
       ins_ctrl.alu_op1_sel := ALUOp1Sel.zero
       ins_ctrl.alu_op2_sel := ALUOp2Sel.imm
