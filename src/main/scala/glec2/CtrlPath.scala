@@ -72,7 +72,6 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
 
   val rest_done = RegNext(True) init(False)
 
-
   val pc = Reg(UInt(conf.pcWidth bits)) init(conf.pcInitVal)
   io.icb.pc := pc
 
@@ -82,7 +81,6 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   val dec_ic = InstructionCtrl(conf, dec_ir, dec_pc)
 
   dec_ir := io.icb.ins
-
 
   io.c2d.rs1 := dec_ic.rs1
   io.c2d.rs2 := dec_ic.rs2
@@ -101,6 +99,25 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   io.c2d.is_branch := exe_ic.is_branch
   io.c2d.exe_pc := exe_pc
 
+  // next pc calculation
+  val alu_eq = io.d2c.alu_ret === B(0, conf.xlen bits)
+  val alu_less = io.d2c.alu_ret(0)
+
+  val should_br = exe_ic.bc.mux(
+    BranchCond.EQ -> alu_eq,
+    BranchCond.NE -> !alu_eq,
+    (BranchCond.LT, BranchCond.LTU) -> alu_less,
+    (BranchCond.GE, BranchCond.GEU) -> !alu_less
+  )
+
+  pc := exe_ic.pc_next_sel.mux(
+    PCNextSel.seq -> (exe_pc + 4),
+    PCNextSel.jalr -> io.d2c.alu_ret.asUInt,
+    PCNextSel.jal -> io.d2c.pcpi,
+    PCNextSel.br -> Mux(should_br, io.d2c.pcpi, exe_pc + 4)
+  )
+
+
   // MEM stage
   val mem_ir = Reg(Bits(conf.xlen bits)) init(Misc.NOP)
   mem_ir := exe_ir
@@ -110,7 +127,7 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   io.c2d.wen := mem_ic.dwen
   io.c2d.store_type := mem_ic.store_type
 
-  // WB stage
+    // WB stage
   val wb_ir = Reg(Bits(conf.xlen bits)) init(Misc.NOP)
   wb_ir := mem_ir
   val wb_pc = RegNext(mem_pc)
@@ -121,6 +138,4 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   io.c2d.wb_sel := wb_ic.wb_sel
   io.c2d.load_type := wb_ic.load_type
 
-  // next pc calcuation
-  pc := pc + 4
 }

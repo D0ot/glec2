@@ -22,12 +22,13 @@ case class DCacheBus (implicit conf : CoreParams) extends Bundle with IMasterSla
 case class Data2CtrlIO (implicit conf : CoreParams) extends Bundle with IMasterSlave{
   
   // exe stage
-  val alu_less = Bool()
-  val alu_eq = Bool()
+  val pcpi = UInt(conf.pcWidth bits)
+  val alu_ret = Bits(conf.xlen bits)
+
 
   def asMaster(): Unit = {
-    out(alu_less)
-    out(alu_eq)
+    out(pcpi)
+    out(alu_ret)
   }
 }
 
@@ -68,17 +69,18 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   alu.io.opcode := io.c2d.alu_opcode
   alu.io.bit30 := io.c2d.ins_bit30
 
-  io.d2c.alu_eq := alu.io.add === B(0, conf.xlen bits)
-  io.d2c.alu_less := alu.io.result(0)
+  io.d2c.alu_ret := alu.io.result
 
   val mem_alu_ret = Reg(Bits(conf.xlen bits))
   val mem_pcpi = Reg(UInt(conf.xlen bits))
   val mem_wdat = Reg(Bits(conf.xlen bits))
   val mem_pc = Reg(UInt(conf.pcWidth bits))
 
+  val pcpi = io.c2d.exe_pc + exe_imm.asUInt
+  io.d2c.pcpi := pcpi
   
   mem_alu_ret := alu.io.result
-  mem_pcpi := io.c2d.exe_pc + exe_imm.asUInt
+  mem_pcpi := pcpi
   mem_wdat := exe_wdat
   mem_pc := io.c2d.exe_pc
 

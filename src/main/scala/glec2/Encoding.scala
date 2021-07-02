@@ -81,7 +81,7 @@ object BranchCond extends SpinalEnum {
 }
 
 object PCNextSel extends SpinalEnum{
-  val seq, jalr, br_jal = newElement()
+  val seq, jalr, br, jal = newElement()
 }
 
 object ALUOp1Sel extends SpinalEnum {
@@ -165,7 +165,6 @@ object InstructionCtrl {
     ins_ctrl.imm := ins_ctrl.pre_imm.i_sext
 
     ins_ctrl.pc_next_sel := PCNextSel.seq
-    ins_ctrl.is_branch := False
 
     ins_ctrl.alu_opcode := ALUOpcode.ADD
     ins_ctrl.alu_op1_sel := ALUOp1Sel.reg
@@ -192,7 +191,7 @@ object InstructionCtrl {
     } elsewhen(ins === InsOpcode.JAL) {
       ins_ctrl.imm := ins_ctrl.pre_imm.j_sext
       ins_ctrl.wb_sel := WriteBackSel.pp4
-      ins_ctrl.pc_next_sel := PCNextSel.br_jal
+      ins_ctrl.pc_next_sel := PCNextSel.jal
 
     } elsewhen(ins === InsOpcode.JALR) {
       ins_ctrl.alu_op2_sel := ALUOp2Sel.imm
@@ -205,8 +204,7 @@ object InstructionCtrl {
       ins_ctrl.alu_opcode := ALUOpcode.SLT
       ins_ctrl.imm := ins_ctrl.pre_imm.b_sext
       ins_ctrl.bc.assignFromBits(ins_ctrl.funct3)
-      ins_ctrl.is_branch := True
-      ins_ctrl.pc_next_sel := PCNextSel.br_jal
+      ins_ctrl.pc_next_sel := PCNextSel.br
       ins_ctrl.reg_wen := False
 
     } elsewhen(ins === InsOpcode.L_BASE) {
