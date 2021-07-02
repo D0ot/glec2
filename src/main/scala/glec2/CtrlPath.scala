@@ -79,20 +79,23 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   val stall = Bool()
   dec_kill := False 
 
-  val if_pc = Reg(UInt(conf.pcWidth bits)) init(conf.pcInitVal)
-  io.icb.pc := if_pc
-  val pc_plus_4 = if_pc + U(4)
+  val prefetch_pc = Reg(UInt(conf.pcWidth bits)) init(conf.pcInitVal)
+  io.icb.pc := prefetch_pc
+  val pc_plus_4 = prefetch_pc + U(4)
 
-  val lag_pc = RegNext(if_pc)
+  val pc_lag = Reg(UInt(conf.pcWidth bits))
 
+  pc_lag := Mux(stall, pc_lag, prefetch_pc)
 
   // ID stage
   val dec_ir = Reg(Bits(32 bits)) init(Misc.NOP)
-  val dec_pc = RegNext(lag_pc) init(conf.pcInitVal)
+  val dec_pc = Reg(UInt(conf.xlen bits)) init(conf.pcInitVal)
   val dec_ic = InstructionCtrl(conf, dec_ir, dec_pc)
 
-  dec_ir := Mux(dec_kill, Misc.NOP, io.icb.ins)
+  dec_pc := Mux(stall, dec_pc, pc_lag)
 
+  // dec_ir := Mux(dec_kill, Misc.NOP, io.icb.ins)
+  dec_ir := Mux(stall, dec_ir, io.icb.ins)
 
   io.c2d.rs1 := dec_ic.rs1
   io.c2d.rs2 := dec_ic.rs2
@@ -134,7 +137,7 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
     PCNextSel.br -> Mux(should_br, io.d2c.pcpi, exe_pc + 4)
   )
 
-  if_pc := Mux(stall, if_pc, next_pc)
+  prefetch_pc := Mux(stall, prefetch_pc, next_pc)
 
 
   // MEM stage
