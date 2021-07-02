@@ -4,6 +4,7 @@ import spinal.core._
 import spinal.lib._
 import glec2.lib.HexReader
 
+
 case class CoreInstructionCmd (implicit conf : CoreParams) extends Bundle {
   val pc = UInt(conf.pcWidth bits)
 }
@@ -22,17 +23,32 @@ case class InstructionBus (implicit conf : CoreParams) extends Bundle with IMast
     rsp.asSlave()
   }
 }
+
 case class ICache(implicit conf : CoreParams) extends Component {
   val io = new Bundle {
-    // instruction cache bus
     val icb = slave (ICacheBus())
-
   }
   val insPath = "/home/doot/projects/glec/riscv/program.bin"
   //val icache = Mem(Bits(conf.xlen bits), conf.l1cacheSize)
   val icache = Mem(UInt(conf.xlen bits), HexReader.loadInsToUInt(insPath))
 
-  val reset_done = RegNext(True) init(False)
-  val rdata = icache.readSync((io.icb.pc(31 downto 2)).resized).asBits
-  io.icb.ins := Mux(reset_done, rdata, Misc.NOP)
+  val pc = Reg(UInt(conf.pcWidth bits)) init(U(0))
+  
+  // always ready, because it is a fake cache...
+  io.icb.cmd.ready := True
+
+  val transfered = RegNext(io.icb.cmd.fire) init(False)
+  val rdat = Bits(conf.xlen bits)
+  val mem_access  = icache.readSync((io.icb.cmd.payload.pc |>> 2).resized).asBits
+  when(io.icb.cmd.fire) {
+    pc := io.icb.cmd.payload.pc
+    rdat := mem_access
+  } otherwise {
+    rdat := B(0)
+  }
+
+  io.icb.rsp.valid := transfered
+  io.icb.rsp.payload.pc := pc
+  io.icb.rsp.payload.ins := rdat
+  
 }

@@ -3,13 +3,38 @@ package glec2
 import spinal.core._
 import spinal.lib._
 
+case class ICacheCmd(implicit conf : CoreParams) extends Bundle with IMasterSlave {
+  val pc = UInt(conf.pcWidth bits)
+  
+  def asMaster(): Unit = {
+    out(pc)
+  }
+}
+
+object ICacheCmd {
+  def apply(implicit conf : CoreParams, pc : UInt) : ICacheCmd = {
+    val cmd = ICacheCmd()
+    cmd.pc := pc
+    cmd
+  }
+}
+
+case class ICacheRsp(implicit conf : CoreParams) extends Bundle with IMasterSlave {
+  val pc = UInt(conf.pcWidth bits)
+  val ins = Bits(32 bits)
+
+  def asMaster(): Unit = {
+    in(pc)
+    in(ins)
+  }
+}
 
 case class ICacheBus(implicit conf : CoreParams) extends Bundle with IMasterSlave {
-  val pc = UInt(conf.pcWidth bits)
-  val ins = Bits(conf.xlen bits)
+  val cmd = Stream(ICacheCmd())
+  val rsp = Flow(ICacheRsp())
   def asMaster(): Unit = {
-    out (pc)
-    in (ins)
+    master (cmd)
+    slave (rsp)
   }
 }
 
@@ -74,28 +99,34 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   // it will be high after reset
   val rest_done = RegNext(True) init(False)
 
-  val flash = Bool()
-  val dec_kill = Bool()
   val stall = Bool()
-  dec_kill := False 
 
-  val prefetch_pc = Reg(UInt(conf.pcWidth bits)) init(conf.pcInitVal)
-  io.icb.pc := prefetch_pc
-  val pc_plus_4 = prefetch_pc + U(4)
+  val pc = Reg(UInt(conf.pcWidth bits)) init(conf.pcInitVal)
+  val pc_plus_4 = pc + U(4)
+  val next_pc = UInt()
+  pc := Mux(!io.icb.cmd.fire, pc, next_pc)
 
-  val pc_lag = Reg(UInt(conf.pcWidth bits))
-
-  pc_lag := Mux(stall, pc_lag, prefetch_pc)
+  val should_fetch = True
+  val fetched = False
+  
+  io.icb.cmd.payload.pc := pc
+  io.icb.cmd.valid := rest_done
 
   // ID stage
   val dec_ir = Reg(Bits(32 bits)) init(Misc.NOP)
   val dec_pc = Reg(UInt(conf.xlen bits)) init(conf.pcInitVal)
   val dec_ic = InstructionCtrl(conf, dec_ir, dec_pc)
 
-  dec_pc := Mux(stall, dec_pc, pc_lag)
-
-  // dec_ir := Mux(dec_kill, Misc.NOP, io.icb.ins)
-  dec_ir := Mux(stall, dec_ir, io.icb.ins)
+  // dec_pc := Mux(stall, dec_pc, pc_lag)
+  //---dec_ir := Mux(stall, dec_ir, io.icb.ins)
+  when(io.icb.rsp.fire) {
+    dec_ir := io.icb.rsp.payload.ins    
+    dec_pc := io.icb.rsp.payload.pc
+  } otherwise {
+    dec_ir := Misc.NOP
+    dec_pc := U(0)
+  }
+  
 
   io.c2d.rs1 := dec_ic.rs1
   io.c2d.rs2 := dec_ic.rs2
@@ -130,20 +161,19 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
     (BranchCond.GE, BranchCond.GEU) -> !alu_less
   )
 
-  val next_pc = exe_ic.pc_next_sel.mux(
+  next_pc := exe_ic.pc_next_sel.mux(
     PCNextSel.seq -> pc_plus_4,
     PCNextSel.jalr -> io.d2c.alu_ret.asUInt,
     PCNextSel.jal -> io.d2c.pcpi,
     PCNextSel.br -> Mux(should_br, io.d2c.pcpi, exe_pc + 4)
   )
 
-  prefetch_pc := Mux(stall, prefetch_pc, next_pc)
 
 
   // MEM stage
   val mem_ir = Reg(Bits(conf.xlen bits)) init(Misc.NOP)
   mem_ir := exe_ir
-  val mem_pc = RegNext(exe_pc)
+  val mem_pc = RegNext(exe_pc) init(U(0))
   val mem_ic = Reg(InstructionCtrl()) init(InstructionCtrl(conf, Misc.NOP, U(0)))
   mem_ic := exe_ic
 
@@ -153,7 +183,7 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   // WB stage
   val wb_ir = Reg(Bits(conf.xlen bits)) init(Misc.NOP)
   wb_ir := mem_ir
-  val wb_pc = RegNext(mem_pc)
+  val wb_pc = RegNext(mem_pc) init(U(0))
   val wb_ic = Reg(InstructionCtrl()) init(InstructionCtrl(conf, Misc.NOP, U(0)))
   wb_ic := mem_ic
 
