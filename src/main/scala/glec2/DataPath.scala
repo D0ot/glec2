@@ -77,6 +77,7 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   val mem_pcpi = Reg(UInt(conf.xlen bits))
   val mem_wdat = Reg(Bits(conf.xlen bits))
   val mem_pc = Reg(UInt(conf.pcWidth bits))
+  io.dcb.store_type := io.c2d.store_type
 
   val pcpi = io.c2d.exe_pc + exe_imm.asUInt
   io.d2c.pcpi := pcpi
