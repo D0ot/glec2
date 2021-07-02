@@ -90,13 +90,20 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   io.dcb.wdata := mem_wdat
   io.dcb.wen := io.c2d.wen
 
-  val wb_dat = Reg(Bits(conf.xlen bits))
+  val wb_dat = Bits(conf.xlen bits)
+
+  val wb_alu_ret = Reg(Bits(conf.xlen bits))
+  wb_alu_ret := mem_alu_ret
+  val wb_pcpi = Reg(UInt(conf.xlen bits))
+  wb_pcpi := mem_pcpi
+  val wb_pc = Reg(UInt(conf.xlen bits))
+  wb_pc := mem_pc
 
   wb_dat := io.c2d.wb_sel.mux(
-    WriteBackSel.alu -> mem_alu_ret,
+    WriteBackSel.alu -> wb_alu_ret,
     WriteBackSel.mem -> io.dcb.rdata,
-    WriteBackSel.pcpi -> mem_pcpi.asBits,
-    WriteBackSel.pp4 -> (mem_pc + U(4, conf.pcWidth bits)).asBits
+    WriteBackSel.pcpi -> wb_pcpi.asBits,
+    WriteBackSel.pp4 -> (wb_pc + U(4, conf.pcWidth bits)).asBits
   )
 
   regFile.io.wdata := wb_dat

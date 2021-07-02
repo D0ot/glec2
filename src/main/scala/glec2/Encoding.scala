@@ -174,7 +174,6 @@ object InstructionCtrl {
     ins_ctrl.wb_sel := WriteBackSel.alu
     ins_ctrl.reg_wen := True
 
-
     ins_ctrl.load_type := LoadType.word
     ins_ctrl.store_type := StoreType.word
     ins_ctrl.dwen := False
