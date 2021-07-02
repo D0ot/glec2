@@ -20,4 +20,5 @@ class GlecCore(implicit conf : CoreParams) extends Component{
   ctrlPath.io.icb <> icache.io.icb
   dataPath.io.dcb <> dcache.io.dcb
   
+  
 }

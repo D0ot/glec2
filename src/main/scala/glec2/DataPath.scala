@@ -68,8 +68,10 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   alu.io.op2 := exe_alu_op2
   alu.io.opcode := io.c2d.alu_opcode
   alu.io.bit30 := io.c2d.ins_bit30
+  alu.io.doSub := io.c2d.do_sub
 
   io.d2c.alu_ret := alu.io.result
+
 
   val mem_alu_ret = Reg(Bits(conf.xlen bits))
   val mem_pcpi = Reg(UInt(conf.xlen bits))

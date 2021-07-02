@@ -28,6 +28,7 @@ case class Ctrl2DataIO(implicit conf : CoreParams) extends Bundle with IMasterSl
   val ins_bit30 = Bool()
   val is_branch = Bool()
   val exe_pc = UInt(conf.pcWidth bits)
+  val do_sub = Bool()
 
   // Mem stage
   val wen = Bool()
@@ -50,6 +51,7 @@ case class Ctrl2DataIO(implicit conf : CoreParams) extends Bundle with IMasterSl
     out(ins_bit30)
     out(is_branch)
     out(exe_pc)
+    out(do_sub)
 
     out(wen)
     out(store_type)
@@ -96,6 +98,7 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   io.c2d.alu_opcode := exe_ic.alu_opcode
   io.c2d.ins_bit30 := exe_ic.ins_bit30
   io.c2d.is_branch := exe_ic.is_branch
+  io.c2d.do_sub := exe_ic.alu_do_sub
   io.c2d.exe_pc := exe_pc
 
   // next pc calculation

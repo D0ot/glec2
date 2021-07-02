@@ -138,6 +138,7 @@ class InstructionCtrl(implicit conf : CoreParams) extends Bundle{
   val alu_opcode = ALUOpcode()
   val alu_op1_sel = ALUOp1Sel()
   val alu_op2_sel = ALUOp2Sel()
+  val alu_do_sub = Bool()
   val reg_wen = Bool()
 
   val wb_sel = WriteBackSel()
@@ -169,6 +170,7 @@ object InstructionCtrl {
     ins_ctrl.alu_opcode := ALUOpcode.ADD
     ins_ctrl.alu_op1_sel := ALUOp1Sel.reg
     ins_ctrl.alu_op2_sel := ALUOp2Sel.reg
+    ins_ctrl.alu_do_sub := False
     ins_ctrl.wb_sel := WriteBackSel.alu
     ins_ctrl.reg_wen := True
 
@@ -178,6 +180,7 @@ object InstructionCtrl {
     ins_ctrl.dwen := False
 
     ins_ctrl.invalid := False
+
     when(ins === InsOpcode.LUI) {
       ins_ctrl.alu_op1_sel := ALUOp1Sel.zero
       ins_ctrl.alu_op2_sel := ALUOp2Sel.imm
@@ -201,7 +204,7 @@ object InstructionCtrl {
 
     } elsewhen(ins === InsOpcode.B_BASE) {
       // result of ALU can be used to determine if we can branch
-      ins_ctrl.alu_opcode := ALUOpcode.SLT
+      ins_ctrl.alu_do_sub := True
       ins_ctrl.imm := ins_ctrl.pre_imm.b_sext
       ins_ctrl.bc.assignFromBits(ins_ctrl.funct3)
       ins_ctrl.pc_next_sel := PCNextSel.br
@@ -225,8 +228,15 @@ object InstructionCtrl {
       ins_ctrl.imm := ins_ctrl.pre_imm.i_sext
       ins_ctrl.alu_opcode.assignFromBits(ins_ctrl.funct3)
 
+      ins_ctrl.alu_do_sub := (ins_ctrl.alu_opcode === ALUOpcode.SLT) ||
+        (ins_ctrl.alu_opcode === ALUOpcode.SLTU)
+
     } elsewhen(ins === InsOpcode.ALR_BASE) {
       ins_ctrl.alu_opcode.assignFromBits(ins_ctrl.funct3)
+
+      ins_ctrl.alu_do_sub := (ins_ctrl.alu_opcode === ALUOpcode.SLT) ||
+        (ins_ctrl.alu_opcode === ALUOpcode.SLTU) ||
+        ((ins_ctrl.alu_opcode === ALUOpcode.ADD) && ins_ctrl.ins_bit30)
 
     } otherwise {
       ins_ctrl.invalid := True

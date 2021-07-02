@@ -20,17 +20,14 @@ case class ALUIO(implicit conf : CoreParams) extends Bundle {
   // for SRL opcode, bit30 == 0 -> SRL
   //                 bit30 == 1 -> SRA
   val bit30 = in Bool()
+  val doSub = in Bool()
 }
 
 
 case class ALU(implicit conf : CoreParams) extends Component {
   val io = ALUIO()
 
-  val doSub = (io.opcode === ALUOpcode.SLT) || 
-    (io.opcode === ALUOpcode.SLTU) ||
-    ((io.opcode === ALUOpcode.ADD) && io.bit30)
-
-  val add = io.op1.asSInt + Mux(doSub, ~io.op2.asSInt, io.op2.asSInt) + Mux(doSub, S(1), S(0))
+  val add = io.op1.asSInt + Mux(io.doSub, ~io.op2.asSInt, io.op2.asSInt) + Mux(io.doSub, S(1), S(0))
   
   val less = Mux(io.op1.msb === io.op2.msb, add.msb,
     Mux(io.opcode === ALUOpcode.SLTU, io.op2.msb, io.op1.msb))
