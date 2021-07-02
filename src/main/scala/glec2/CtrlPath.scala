@@ -83,11 +83,12 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   io.icb.pc := if_pc
   val pc_plus_4 = if_pc + U(4)
 
+  val lag_pc = RegNext(if_pc)
+
 
   // ID stage
-  //val dec_ir = Mux(dec_kill, Misc.NOP, io.icb.ins)
-  val dec_ir = Reg(Bits(32 bits))
-  val dec_pc = RegNext(if_pc) init(conf.pcInitVal)
+  val dec_ir = Reg(Bits(32 bits)) init(Misc.NOP)
+  val dec_pc = RegNext(lag_pc) init(conf.pcInitVal)
   val dec_ic = InstructionCtrl(conf, dec_ir, dec_pc)
 
   dec_ir := Mux(dec_kill, Misc.NOP, io.icb.ins)
