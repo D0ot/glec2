@@ -76,11 +76,10 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   io.icb.pc := pc
 
   // ID stage
-  val dec_ir = Reg(Bits(conf.xlen bits)) init(Misc.NOP)
-  val dec_pc = RegNext(pc)
+  val dec_ir = io.icb.ins
+  val dec_pc = RegNext(pc) init(conf.pcInitVal)
   val dec_ic = InstructionCtrl(conf, dec_ir, dec_pc)
 
-  dec_ir := io.icb.ins
 
   io.c2d.rs1 := dec_ic.rs1
   io.c2d.rs2 := dec_ic.rs2
@@ -89,7 +88,7 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   // EXE stage
   val exe_ir = Reg(Bits(conf.xlen bits)) init(Misc.NOP)
   exe_ir := dec_ir
-  val exe_pc = RegNext(dec_pc)
+  val exe_pc = RegNext(dec_pc) init(conf.pcInitVal)
   val exe_ic = InstructionCtrl(conf, exe_ir, exe_pc)
 
   io.c2d.alu_op1_sel := exe_ic.alu_op1_sel
@@ -111,7 +110,7 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   )
 
   pc := exe_ic.pc_next_sel.mux(
-    PCNextSel.seq -> (exe_pc + 4),
+    PCNextSel.seq -> (pc + 4),
     PCNextSel.jalr -> io.d2c.alu_ret.asUInt,
     PCNextSel.jal -> io.d2c.pcpi,
     PCNextSel.br -> Mux(should_br, io.d2c.pcpi, exe_pc + 4)
