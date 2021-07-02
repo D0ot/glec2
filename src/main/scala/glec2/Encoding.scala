@@ -119,7 +119,7 @@ object StoreType extends SpinalEnum {
   )
 }
 
-class InstructionCtrl(implicit conf : CoreParams) extends Bundle{
+case class InstructionCtrl(implicit conf : CoreParams) extends Bundle{
   val ins = Bits(conf.xlen bits)
   val pc = UInt(conf.xlen bits)
   val rs1 = UInt(5 bits)

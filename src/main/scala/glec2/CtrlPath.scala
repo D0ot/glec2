@@ -71,22 +71,26 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
     val c2d = master (Ctrl2DataIO())
     val d2c = slave (Data2CtrlIO())
   }
+  // it will be high after reset
+  val rest_done = RegNext(True) init(False)
 
   val flash = Bool()
   val dec_kill = Bool()
-  val rest_done = RegNext(True) init(False)
-
+  val stall = Bool()
   dec_kill := False 
 
-  val pc = Reg(UInt(conf.pcWidth bits)) init(conf.pcInitVal)
-  io.icb.pc := pc
+  val if_pc = Reg(UInt(conf.pcWidth bits)) init(conf.pcInitVal)
+  io.icb.pc := if_pc
+  val pc_plus_4 = if_pc + U(4)
 
-  val pc_plus_4 = pc + U(4)
 
   // ID stage
-  val dec_ir = Mux(dec_kill, Misc.NOP, io.icb.ins)
-  val dec_pc = RegNext(pc) init(conf.pcInitVal)
+  //val dec_ir = Mux(dec_kill, Misc.NOP, io.icb.ins)
+  val dec_ir = Reg(Bits(32 bits))
+  val dec_pc = RegNext(if_pc) init(conf.pcInitVal)
   val dec_ic = InstructionCtrl(conf, dec_ir, dec_pc)
+
+  dec_ir := Mux(dec_kill, Misc.NOP, io.icb.ins)
 
 
   io.c2d.rs1 := dec_ic.rs1
@@ -95,10 +99,13 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
 
   // EXE stage
   val exe_ir = Reg(Bits(conf.xlen bits)) init(Misc.NOP)
-  exe_ir := dec_ir
-  val exe_pc = RegNext(dec_pc) init(conf.pcInitVal)
-  val exe_ic = Reg(new InstructionCtrl()) init(InstructionCtrl(conf, Misc.NOP, U(0)))
-  exe_ic := dec_ic
+  exe_ir := Mux(stall, Misc.NOP, dec_ir)
+
+  val exe_pc = Reg(UInt(conf.pcWidth bits)) init(conf.pcInitVal)
+  exe_pc := Mux(stall, U(0), dec_pc)
+
+  val exe_ic = Reg(InstructionCtrl()) init(InstructionCtrl(conf, Misc.NOP, U(0)))
+  exe_ic := Mux(stall, InstructionCtrl(conf, Misc.NOP, U(0)), dec_ic)
 
   io.c2d.alu_op1_sel := exe_ic.alu_op1_sel
   io.c2d.alu_op2_sel := exe_ic.alu_op2_sel
@@ -126,14 +133,14 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
     PCNextSel.br -> Mux(should_br, io.d2c.pcpi, exe_pc + 4)
   )
 
-  pc := next_pc
+  if_pc := Mux(stall, if_pc, next_pc)
 
 
   // MEM stage
   val mem_ir = Reg(Bits(conf.xlen bits)) init(Misc.NOP)
   mem_ir := exe_ir
   val mem_pc = RegNext(exe_pc)
-  val mem_ic = Reg(new InstructionCtrl()) init(InstructionCtrl(conf, Misc.NOP, U(0)))
+  val mem_ic = Reg(InstructionCtrl()) init(InstructionCtrl(conf, Misc.NOP, U(0)))
   mem_ic := exe_ic
 
   io.c2d.wen := mem_ic.dwen
@@ -143,7 +150,7 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   val wb_ir = Reg(Bits(conf.xlen bits)) init(Misc.NOP)
   wb_ir := mem_ir
   val wb_pc = RegNext(mem_pc)
-  val wb_ic = Reg(new InstructionCtrl()) init(InstructionCtrl(conf, Misc.NOP, U(0)))
+  val wb_ic = Reg(InstructionCtrl()) init(InstructionCtrl(conf, Misc.NOP, U(0)))
   wb_ic := mem_ic
 
   io.c2d.rd := wb_ic.rd
@@ -152,7 +159,14 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   io.c2d.load_type := wb_ic.load_type
 
   // Stall
-  val stall = Bool()
-  stall := (dec_ic.rs1 =/= U(0)) && (dec_ic.rs2 =/= U(0))
-
+  val dec_use_rs1 = dec_ic.alu_op1_sel === ALUOp1Sel.reg
+  val dec_use_rs2 = (dec_ic.alu_op2_sel === ALUOp2Sel.reg) || (dec_ic.dwen)
+  
+  stall :=
+    ((exe_ic.rd === dec_ic.rs1) && (dec_ic.rs1 =/= U(0)) && dec_use_rs1) ||
+    ((exe_ic.rd === dec_ic.rs2) && (dec_ic.rs2 =/= U(0)) && dec_use_rs2) || 
+    ((mem_ic.rd === dec_ic.rs1) && (dec_ic.rs1 =/= U(0)) && dec_use_rs1) ||
+    ((mem_ic.rd === dec_ic.rs2) && (dec_ic.rs2 =/= U(0)) && dec_use_rs2) ||
+    ((wb_ic.rd === dec_ic.rs1) && (dec_ic.rs1 =/= U(0)) && dec_use_rs1) ||
+    ((wb_ic.rd === dec_ic.rs2) && (dec_ic.rs2 =/= U(0)) && dec_use_rs2)
 }
