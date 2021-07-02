@@ -108,5 +108,4 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   )
 
   regFile.io.wdata := wb_dat
-  
 }
