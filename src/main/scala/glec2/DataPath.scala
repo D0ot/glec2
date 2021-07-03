@@ -54,6 +54,8 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   regFile.io.wen := io.c2d.reg_wen
 
   regFile.io.dm_wen := False
+  regFile.io.dm_addr := U(0)
+  regFile.io.dm_wdata := B(0)
 
   val reg1_bypassed = Bits(conf.xlen bits)
   val reg2_bypassed = Bits(conf.xlen bits)

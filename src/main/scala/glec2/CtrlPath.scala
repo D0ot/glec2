@@ -43,6 +43,32 @@ case class ICacheBus(implicit conf : CoreParams) extends Bundle with IMasterSlav
   }
 }
 
+case class CtrlInspect(implicit conf : CoreParams) extends Bundle with IMasterSlave {
+  val if_pc = UInt(conf.pcWidth bits)
+  val dec_pc = UInt(conf.pcWidth bits)
+  val exe_pc = UInt(conf.pcWidth bits)
+  val mem_pc = UInt(conf.pcWidth bits)
+  val wb_pc = UInt(conf.pcWidth bits)
+
+  val dec_ir = Bits(32 bits)
+  val exe_ir = Bits(32 bits)
+  val mem_ir = Bits(32 bits)
+  val wb_ir = Bits(32 bits)
+
+  def asMaster(): Unit = {
+    out(if_pc)
+    out(dec_pc)
+    out(exe_pc)
+    out(mem_pc)
+    out(wb_pc)
+
+    out(dec_ir)
+    out(exe_ir)
+    out(mem_ir)
+    out(wb_ir)
+  }
+
+}
 
 case class Ctrl2DataIO(implicit conf : CoreParams) extends Bundle with IMasterSlave{
 
@@ -108,6 +134,8 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
     val icb = master (ICacheBus())
     val c2d = master (Ctrl2DataIO())
     val d2c = slave (Data2CtrlIO())
+
+    val inspect = master (CtrlInspect())
   }
 
   val should_jal = Bool()
@@ -302,6 +330,17 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
       ((wb_ic.rd === dec_ic.rs1) && (dec_ic.rs1 =/= U(0)) && dec_use_rs1) ||
       ((wb_ic.rd === dec_ic.rs2) && (dec_ic.rs2 =/= U(0)) && dec_use_rs2)
   }
+
+  io.inspect.if_pc := pc
+  io.inspect.dec_pc := dec_pc
+  io.inspect.exe_pc := exe_pc
+  io.inspect.mem_pc := mem_pc
+  io.inspect.wb_pc := wb_pc
+
+  io.inspect.dec_ir := dec_ir
+  io.inspect.exe_ir := exe_ir
+  io.inspect.mem_ir := mem_ir 
+  io.inspect.wb_ir := wb_ir
 
 
 }

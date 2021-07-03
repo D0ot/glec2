@@ -3,11 +3,23 @@ package glec2
 import spinal.core._
 import spinal.lib._
 
-import spinal.lib.cpu.riscv.impl.CoreDataBus
+import spinal.lib.bus.amba4.axilite.AxiLite4
+
+
+case class GlecCoreInspect(implicit conf : CoreParams) extends Bundle with IMasterSlave{
+  val pc = UInt(conf.pcWidth bits)
+  val ir = Bits(32 bits)
+
+  def asMaster(): Unit = {
+    out(pc)
+    out(ir)
+  }
+}
 
 
 class GlecCore(implicit conf : CoreParams) extends Component{
   val io = new Bundle {
+    val inspect = master (GlecCoreInspect())
   }
 
   val dataPath = DataPath()
@@ -22,5 +34,6 @@ class GlecCore(implicit conf : CoreParams) extends Component{
   ctrlPath.io.icb <> icache.io.icb
   dataPath.io.dcb <> dcache.io.dcb
   
-  
+  io.inspect.ir := ctrlPath.io.inspect.dec_ir
+  io.inspect.pc := ctrlPath.io.inspect.dec_pc
 }
