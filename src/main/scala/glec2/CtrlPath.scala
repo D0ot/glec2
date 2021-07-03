@@ -110,6 +110,10 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
     val d2c = slave (Data2CtrlIO())
   }
 
+  val should_jal = Bool()
+  val should_jalr = Bool()
+  val should_branch = Bool()
+
 
   // IF stage
   // it will be high after reset
@@ -173,26 +177,35 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   io.c2d.ins_bit30 := exe_ic.ins_bit30
   io.c2d.do_sub := exe_ic.alu_do_sub
 
-  // next pc calculation
+
+  // Jump and Link, Branch 
+  should_jal := PCNextSel.jal === dec_ic.pc_next_sel
+  should_jalr := PCNextSel.jalr === dec_ic.pc_next_sel
+
   val alu_eq = io.d2c.alu_ret === B(0, conf.xlen bits)
   val alu_less = io.d2c.alu_ret(0)
 
-  val should_br = exe_ic.bc.mux(
+  val branch_take = exe_ic.bc.mux(
     BranchCond.EQ -> alu_eq,
     BranchCond.NE -> !alu_eq,
     (BranchCond.LT, BranchCond.LTU) -> alu_less,
     (BranchCond.GE, BranchCond.GEU) -> !alu_less
   )
+  should_branch := (PCNextSel.br === exe_ic.pc_next_sel) && (branch_take)
 
-  load_pc := exe_ic.pc_next_sel.mux(
-    PCNextSel.seq -> pc,
-    PCNextSel.jalr -> io.d2c.alu_ret.asUInt,
-    PCNextSel.jal -> io.d2c.pcpi,
-    PCNextSel.br -> Mux(should_br, io.d2c.pcpi, pc)
-  )
+  should_load_pc := True
+  when(should_jal === True) {
+    load_pc := io.d2c.dec_pcpi
+  } elsewhen(should_jalr === True) {
+    load_pc := io.d2c.dec_pcpr
+  } elsewhen(should_branch === True) {
+    load_pc := io.d2c.exe_pcpi
+  } otherwise {
+    load_pc := U(0)
+    should_load_pc := False
+  }
 
-  should_load_pc := exe_ic.pc_next_sel =/= PCNextSel.seq
-
+ 
 
 
   // MEM stage
@@ -219,6 +232,9 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
 
   // Stall
   val dec_use_rs1 = dec_ic.alu_op1_sel === ALUOp1Sel.reg
+
+  // because the write data to DCache is from rs2, so "|| (dec_ic.dwen)"
+  // ALUOp2Sel is just about ALU operand
   val dec_use_rs2 = (dec_ic.alu_op2_sel === ALUOp2Sel.reg) || (dec_ic.dwen)
   
   if(conf.bypass) {

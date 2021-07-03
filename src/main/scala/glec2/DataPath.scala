@@ -22,15 +22,21 @@ case class DCacheBus (implicit conf : CoreParams) extends Bundle with IMasterSla
 case class Data2CtrlIO (implicit conf : CoreParams) extends Bundle with IMasterSlave{
 
   // ID stage
-  val pcpi = UInt(conf.pcWidth bits)
+  // pc plus imm
+  val dec_pcpi = UInt(conf.pcWidth bits)
+  // pc plus reg
+  val dec_pcpr = UInt(conf.pcWidth bits)
   
   // EXE stage
   val alu_ret = Bits(conf.xlen bits)
+  val exe_pcpi = UInt(conf.pcWidth bits)
 
 
   def asMaster(): Unit = {
-    out(pcpi)
+    out(dec_pcpi)
+    out(dec_pcpr)
     out(alu_ret)
+    out(exe_pcpi)
   }
 }
 
@@ -47,19 +53,22 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   regFile.io.waddr := io.c2d.rd
   regFile.io.wen := io.c2d.reg_wen
 
+  val reg1_bypassed = Bits(conf.xlen bits)
+  val reg2_bypassed = Bits(conf.xlen bits)
 
   val pcpi = io.c2d.dec_pc + io.c2d.imm.asUInt
-  io.d2c.pcpi := pcpi
+  io.d2c.dec_pcpi := pcpi
+
+  val pcpr = io.c2d.dec_pc + reg1_bypassed.asUInt
+  io.d2c.dec_pcpr := pcpr
 
   val exe_alu_op1 = Reg(Bits(conf.xlen bits))
   val exe_alu_op2 = Reg(Bits(conf.xlen bits))
   val exe_wdat = Reg(Bits(conf.xlen bits))
   val exe_pcpi = Reg(UInt(conf.xlen bits))
   val exe_pc = Reg(UInt(conf.pcWidth bits))
+  io.d2c.exe_pcpi := exe_pcpi
 
-
-  val reg1_bypassed = Bits(conf.xlen bits)
-  val reg2_bypassed = Bits(conf.xlen bits)
 
   exe_wdat := reg2_bypassed
   exe_pcpi := pcpi
