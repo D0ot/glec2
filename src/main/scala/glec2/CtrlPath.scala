@@ -52,6 +52,7 @@ case class Ctrl2DataIO(implicit conf : CoreParams) extends Bundle with IMasterSl
   val imm = Bits(32 bits)
   val alu_op1_sel = ALUOp1Sel()
   val alu_op2_sel = ALUOp2Sel()
+  val dec_pc = UInt(conf.pcWidth bits)
 
   val fwd1_sel = ForwordSel()
   val fwd2_sel = ForwordSel()
@@ -62,8 +63,6 @@ case class Ctrl2DataIO(implicit conf : CoreParams) extends Bundle with IMasterSl
   // EXE stage
   val alu_opcode = ALUOpcode()
   val ins_bit30 = Bool()
-  val is_branch = Bool()
-  val exe_pc = UInt(conf.pcWidth bits)
   val do_sub = Bool()
 
   // Mem stage
@@ -82,6 +81,7 @@ case class Ctrl2DataIO(implicit conf : CoreParams) extends Bundle with IMasterSl
     out(imm)
     out(alu_op1_sel)
     out(alu_op2_sel)
+    out(dec_pc)
     out(fwd1_sel)
     out(fwd2_sel)
     out(fwd1_wb_sel)
@@ -89,8 +89,6 @@ case class Ctrl2DataIO(implicit conf : CoreParams) extends Bundle with IMasterSl
 
     out(alu_opcode)
     out(ins_bit30)
-    out(is_branch)
-    out(exe_pc)
     out(do_sub)
 
     out(wen)
@@ -157,6 +155,7 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   io.c2d.rs1 := dec_ic.rs1
   io.c2d.rs2 := dec_ic.rs2
   io.c2d.imm := dec_ic.imm
+  io.c2d.dec_pc := dec_pc
 
   // EXE stage
   val exe_ir = Reg(Bits(conf.xlen bits)) init(Misc.NOP)
@@ -172,9 +171,7 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   io.c2d.alu_op2_sel := exe_ic.alu_op2_sel
   io.c2d.alu_opcode := exe_ic.alu_opcode
   io.c2d.ins_bit30 := exe_ic.ins_bit30
-  io.c2d.is_branch := exe_ic.is_branch
   io.c2d.do_sub := exe_ic.alu_do_sub
-  io.c2d.exe_pc := exe_pc
 
   // next pc calculation
   val alu_eq = io.d2c.alu_ret === B(0, conf.xlen bits)

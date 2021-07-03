@@ -20,9 +20,11 @@ case class DCacheBus (implicit conf : CoreParams) extends Bundle with IMasterSla
 }
 
 case class Data2CtrlIO (implicit conf : CoreParams) extends Bundle with IMasterSlave{
-  
-  // exe stage
+
+  // ID stage
   val pcpi = UInt(conf.pcWidth bits)
+  
+  // EXE stage
   val alu_ret = Bits(conf.xlen bits)
 
 
@@ -45,17 +47,23 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   regFile.io.waddr := io.c2d.rd
   regFile.io.wen := io.c2d.reg_wen
 
+
+  val pcpi = io.c2d.dec_pc + io.c2d.imm.asUInt
+  io.d2c.pcpi := pcpi
+
   val exe_alu_op1 = Reg(Bits(conf.xlen bits))
   val exe_alu_op2 = Reg(Bits(conf.xlen bits))
-  val exe_imm = Reg(Bits(conf.xlen bits))
   val exe_wdat = Reg(Bits(conf.xlen bits))
+  val exe_pcpi = Reg(UInt(conf.xlen bits))
+  val exe_pc = Reg(UInt(conf.pcWidth bits))
 
 
   val reg1_bypassed = Bits(conf.xlen bits)
   val reg2_bypassed = Bits(conf.xlen bits)
 
-  exe_imm := io.c2d.imm
   exe_wdat := reg2_bypassed
+  exe_pcpi := pcpi
+  exe_pc := io.c2d.dec_pc
 
   exe_alu_op1 := io.c2d.alu_op1_sel.mux(
       ALUOp1Sel.reg -> reg1_bypassed,
@@ -77,8 +85,6 @@ case class DataPath (implicit conf : CoreParams) extends Component {
 
   io.d2c.alu_ret := alu.io.result
 
-  val pcpi = io.c2d.exe_pc + exe_imm.asUInt
-  io.d2c.pcpi := pcpi
 
   val mem_alu_ret = Reg(Bits(conf.xlen bits))
   val mem_pcpi = Reg(UInt(conf.xlen bits))
@@ -90,7 +96,7 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   mem_alu_ret := alu.io.result
   mem_pcpi := pcpi
   mem_wdat := exe_wdat
-  mem_pc := io.c2d.exe_pc
+  mem_pc := exe_pc
 
   io.dcb.addr := mem_alu_ret.asUInt
   io.dcb.wdata := mem_wdat
@@ -121,7 +127,7 @@ case class DataPath (implicit conf : CoreParams) extends Component {
         WriteBackSel.alu -> (alu.io.result),
         WriteBackSel.mem -> (B(0)), // can not occur
         WriteBackSel.pcpi -> (pcpi.asBits),
-        WriteBackSel.pp4 -> ((io.c2d.exe_pc + U(4)).asBits)
+        WriteBackSel.pp4 -> ((exe_pc + U(4)).asBits)
       )),
       ForwordSel.mem -> ( io.c2d.fwd1_wb_sel.mux(
         WriteBackSel.alu -> (mem_alu_ret),
@@ -138,7 +144,7 @@ case class DataPath (implicit conf : CoreParams) extends Component {
         WriteBackSel.alu -> (alu.io.result),
         WriteBackSel.mem -> (B(0)), // can not occur
         WriteBackSel.pcpi -> (pcpi.asBits),
-        WriteBackSel.pp4 -> ((io.c2d.exe_pc + U(4)).asBits)
+        WriteBackSel.pp4 -> ((exe_pc + U(4)).asBits)
       )),
       ForwordSel.mem -> ( io.c2d.fwd2_wb_sel.mux(
         WriteBackSel.alu -> (mem_alu_ret),
