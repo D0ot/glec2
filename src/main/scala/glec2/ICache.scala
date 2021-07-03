@@ -28,7 +28,7 @@ case class ICache(implicit conf : CoreParams) extends Component {
   val io = new Bundle {
     val icb = slave (ICacheBus())
   }
-  val insPath = "/home/doot/projects/glec/riscv/program.bin"
+  val insPath = "./riscv/program.bin"
   //val icache = Mem(Bits(conf.xlen bits), conf.l1cacheSize)
   val icache = Mem(UInt(conf.xlen bits), HexReader.loadInsToUInt(insPath))
 
