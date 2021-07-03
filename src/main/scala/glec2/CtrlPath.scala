@@ -3,6 +3,7 @@ package glec2
 import spinal.core._
 import spinal.lib._
 
+// select the data from which is forwarded
 object ForwordSel extends SpinalEnum {
   val none, exe, mem, wb = newElement()
 }
@@ -55,6 +56,9 @@ case class Ctrl2DataIO(implicit conf : CoreParams) extends Bundle with IMasterSl
   val fwd1_sel = ForwordSel()
   val fwd2_sel = ForwordSel()
 
+  val fwd1_wb_sel = WriteBackSel()
+  val fwd2_wb_sel = WriteBackSel()
+
   // EXE stage
   val alu_opcode = ALUOpcode()
   val ins_bit30 = Bool()
@@ -80,6 +84,8 @@ case class Ctrl2DataIO(implicit conf : CoreParams) extends Bundle with IMasterSl
     out(alu_op2_sel)
     out(fwd1_sel)
     out(fwd2_sel)
+    out(fwd1_wb_sel)
+    out(fwd2_wb_sel)
 
     out(alu_opcode)
     out(ins_bit30)
@@ -156,9 +162,6 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   io.c2d.rs2 := dec_ic.rs2
   io.c2d.imm := dec_ic.imm
 
-  io.c2d.fwd1_sel := ForwordSel.none
-  io.c2d.fwd2_sel := ForwordSel.none
-
   // EXE stage
   val exe_ir = Reg(Bits(conf.xlen bits)) init(Misc.NOP)
   exe_ir := Mux(stall, Misc.NOP, dec_ir)
@@ -227,17 +230,29 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   
   if(conf.bypass) {
     // only stall when source register is writen by a load instruction
+    // because the DCache has one cycle latency, 
+    // if it is a load instruction, we can only bypass in WB stage
     stall := 
       ((exe_ic.rd === dec_ic.rs1) && (dec_ic.rs1 =/= U(0)) && dec_use_rs1 && exe_ic.is_load) ||
-      ((exe_ic.rd === dec_ic.rs2) && (dec_ic.rs2 =/= U(0)) && dec_use_rs2 && exe_ic.is_load)
+      ((exe_ic.rd === dec_ic.rs2) && (dec_ic.rs2 =/= U(0)) && dec_use_rs2 && exe_ic.is_load) ||
+      ((mem_ic.rd === dec_ic.rs1) && (dec_ic.rs1 =/= U(0)) && dec_use_rs1 && mem_ic.is_load) ||
+      ((mem_ic.rd === dec_ic.rs2) && (dec_ic.rs2 =/= U(0)) && dec_use_rs2 && mem_ic.is_load)
 
     val fwd1_sel = ForwordSel()
+    fwd1_sel := ForwordSel.none
+    io.c2d.fwd1_wb_sel := WriteBackSel.alu
+
     when(!dec_use_rs1 || dec_ic.rs1 === U(0)) {
       fwd1_sel := ForwordSel.none
+
     } elsewhen(dec_ic.rs1 === exe_ic.rd && exe_ic.reg_wen) {
       fwd1_sel := ForwordSel.exe
+      io.c2d.fwd1_wb_sel := exe_ic.wb_sel
+
     } elsewhen(dec_ic.rs1 === mem_ic.rd && mem_ic.reg_wen) {
       fwd1_sel := ForwordSel.mem
+      io.c2d.fwd1_wb_sel := mem_ic.wb_sel
+
     } elsewhen(dec_ic.rs1 === wb_ic.rd && wb_ic.reg_wen) {
       fwd1_sel := ForwordSel.wb
     } otherwise {
@@ -245,12 +260,20 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
     }
 
     val fwd2_sel = ForwordSel()
+    fwd2_sel := ForwordSel.none
+    io.c2d.fwd2_wb_sel := WriteBackSel.alu
+
     when(!dec_use_rs2 || dec_ic.rs2 === U(0)) {
       fwd2_sel := ForwordSel.none
+
     } elsewhen(dec_ic.rs2 === exe_ic.rd && exe_ic.reg_wen) {
       fwd2_sel := ForwordSel.exe
+      io.c2d.fwd2_wb_sel := exe_ic.wb_sel
+
     } elsewhen(dec_ic.rs2 === mem_ic.rd && mem_ic.reg_wen) {
       fwd2_sel := ForwordSel.mem
+      io.c2d.fwd2_wb_sel := mem_ic.wb_sel
+
     } elsewhen(dec_ic.rs2 === wb_ic.rd && wb_ic.reg_wen) {
       fwd2_sel := ForwordSel.wb
     } otherwise {
@@ -269,8 +292,6 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
       ((mem_ic.rd === dec_ic.rs2) && (dec_ic.rs2 =/= U(0)) && dec_use_rs2) ||
       ((wb_ic.rd === dec_ic.rs1) && (dec_ic.rs1 =/= U(0)) && dec_use_rs1) ||
       ((wb_ic.rd === dec_ic.rs2) && (dec_ic.rs2 =/= U(0)) && dec_use_rs2)
-
-
   }
 
 

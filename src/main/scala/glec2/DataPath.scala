@@ -50,20 +50,13 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   val exe_imm = Reg(Bits(conf.xlen bits))
   val exe_wdat = Reg(Bits(conf.xlen bits))
 
-  exe_alu_op1 := io.c2d.alu_op1_sel.mux(
-    ALUOp1Sel.reg -> regFile.io.rs1_data,
-    ALUOp1Sel.zero -> B(0, conf.xlen bits)
-  )
-
-  exe_alu_op2 := io.c2d.alu_op2_sel.mux(
-    ALUOp2Sel.reg -> regFile.io.rs2_data,
-    ALUOp2Sel.imm -> io.c2d.imm
-  )
-
   exe_imm := io.c2d.imm
   exe_wdat := regFile.io.rs2_data
 
+
+
   val alu = ALU()
+
   alu.io.op1 := exe_alu_op1
   alu.io.op2 := exe_alu_op2
   alu.io.opcode := io.c2d.alu_opcode
@@ -72,6 +65,8 @@ case class DataPath (implicit conf : CoreParams) extends Component {
 
   io.d2c.alu_ret := alu.io.result
 
+  val pcpi = io.c2d.exe_pc + exe_imm.asUInt
+  io.d2c.pcpi := pcpi
 
   val mem_alu_ret = Reg(Bits(conf.xlen bits))
   val mem_pcpi = Reg(UInt(conf.xlen bits))
@@ -79,8 +74,6 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   val mem_pc = Reg(UInt(conf.pcWidth bits))
   io.dcb.store_type := io.c2d.store_type
 
-  val pcpi = io.c2d.exe_pc + exe_imm.asUInt
-  io.d2c.pcpi := pcpi
   
   mem_alu_ret := alu.io.result
   mem_pcpi := pcpi
@@ -91,7 +84,6 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   io.dcb.wdata := mem_wdat
   io.dcb.wen := io.c2d.wen
 
-  val wb_dat = Bits(conf.xlen bits)
 
   val wb_alu_ret = Reg(Bits(conf.xlen bits))
   wb_alu_ret := mem_alu_ret
@@ -99,6 +91,7 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   wb_pcpi := mem_pcpi
   val wb_pc = Reg(UInt(conf.xlen bits))
   wb_pc := mem_pc
+  val wb_dat = Bits(conf.xlen bits)
 
   wb_dat := io.c2d.wb_sel.mux(
     WriteBackSel.alu -> wb_alu_ret,
@@ -108,4 +101,54 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   )
 
   regFile.io.wdata := wb_dat
+
+    val alu_op1_no_bypass = io.c2d.alu_op1_sel.mux(
+      ALUOp1Sel.reg -> regFile.io.rs1_data,
+      ALUOp1Sel.zero -> B(0, conf.xlen bits)
+    )
+
+    val alu_op2_no_bypass = io.c2d.alu_op2_sel.mux(
+      ALUOp2Sel.reg -> regFile.io.rs2_data,
+      ALUOp2Sel.imm -> io.c2d.imm
+    )
+
+
+  if(conf.bypass) {
+    exe_alu_op1 := io.c2d.fwd1_sel.mux(
+      ForwordSel.none -> (alu_op1_no_bypass),
+      ForwordSel.exe -> ( io.c2d.fwd1_wb_sel.mux(
+        WriteBackSel.alu -> (alu.io.result),
+        WriteBackSel.mem -> (B(0)), // can not occur
+        WriteBackSel.pcpi -> (pcpi.asBits),
+        WriteBackSel.pp4 -> ((io.c2d.exe_pc + U(4)).asBits)
+      )),
+      ForwordSel.mem -> ( io.c2d.fwd1_wb_sel.mux(
+        WriteBackSel.alu -> (mem_alu_ret),
+        WriteBackSel.mem -> (B(0)), // can not occur
+        WriteBackSel.pcpi -> (mem_pcpi.asBits),
+        WriteBackSel.pp4 -> ((mem_pc + U(4)).asBits)
+      )),
+      ForwordSel.wb -> (wb_dat)
+    )
+    exe_alu_op2 := io.c2d.fwd2_sel.mux(
+      ForwordSel.none -> (alu_op2_no_bypass),
+      ForwordSel.exe -> ( io.c2d.fwd2_wb_sel.mux(
+        WriteBackSel.alu -> (alu.io.result),
+        WriteBackSel.mem -> (B(0)), // can not occur
+        WriteBackSel.pcpi -> (pcpi.asBits),
+        WriteBackSel.pp4 -> ((io.c2d.exe_pc + U(4)).asBits)
+      )),
+      ForwordSel.mem -> ( io.c2d.fwd2_wb_sel.mux(
+        WriteBackSel.alu -> (mem_alu_ret),
+        WriteBackSel.mem -> (B(0)), // can not occur
+        WriteBackSel.pcpi -> (mem_pcpi.asBits),
+        WriteBackSel.pp4 -> ((mem_pc + U(4)).asBits)
+      )),
+      ForwordSel.wb -> (wb_dat)
+    )
+  } else {
+    exe_alu_op1 := alu_op1_no_bypass
+    exe_alu_op2 := alu_op2_no_bypass
+  }
+
 }
