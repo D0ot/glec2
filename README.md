@@ -2,6 +2,12 @@
 
 **A toy implementation of classic 5-stage rv32i(incomplete) based on powerful SpinalHDL**
 
+## Design Drawing
+
+![avator](./design/microarch.svg)
+
+
+
 ---
 ## Implemented:
 
