@@ -16,7 +16,7 @@ case class CoreInstructionRsp (implicit conf : CoreParams) extends Bundle {
 
 case class InstructionBus (implicit conf : CoreParams) extends Bundle with IMasterSlave{
   val cmd = Stream(CoreInstructionCmd())
-  val rsp = Flow(CoreInstructionRsp())
+  val rsp = Stream(CoreInstructionRsp())
   
   def asMaster(): Unit = {
     cmd.asMaster()
@@ -40,6 +40,7 @@ case class ICache(implicit conf : CoreParams) extends Component {
   val transfered = RegNext(io.icb.cmd.fire) init(False)
   val rdat = Bits(conf.xlen bits)
   val mem_access  = icache.readSync((io.icb.cmd.payload.pc |>> 2).resized).asBits
+
   when(io.icb.cmd.fire) {
     pc := io.icb.cmd.payload.pc
     rdat := mem_access

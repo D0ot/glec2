@@ -3,6 +3,8 @@ package glec2
 import spinal.core._
 import spinal.lib._
 
+import spinal.lib.cpu.riscv.impl.CoreDataBus
+
 
 class GlecCore(implicit conf : CoreParams) extends Component{
   val io = new Bundle {

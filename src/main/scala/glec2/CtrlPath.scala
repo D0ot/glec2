@@ -101,32 +101,41 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
 
   val stall = Bool()
 
+  val inc = False
   val pc = Reg(UInt(conf.pcWidth bits)) init(conf.pcInitVal)
-  val pc_plus_4 = pc + U(4)
-  val next_pc = UInt()
-  pc := Mux(!io.icb.cmd.fire, pc, next_pc)
+  val load_pc = UInt()
+  val should_load_pc = Bool()
 
-  val should_fetch = True
-  val fetched = False
-  
-  io.icb.cmd.payload.pc := pc
-  io.icb.cmd.valid := rest_done
+  val next_pc = Mux(should_load_pc, load_pc, 
+        Mux(inc, pc + U(4), pc))
+
+  pc := next_pc
+  io.icb.cmd.payload.pc := next_pc
+  io.icb.cmd.valid := rest_done && !stall
 
   // ID stage
   val dec_ir = Reg(Bits(32 bits)) init(Misc.NOP)
   val dec_pc = Reg(UInt(conf.xlen bits)) init(conf.pcInitVal)
   val dec_ic = InstructionCtrl(conf, dec_ir, dec_pc)
 
-  // dec_pc := Mux(stall, dec_pc, pc_lag)
-  //---dec_ir := Mux(stall, dec_ir, io.icb.ins)
-  when(io.icb.rsp.fire) {
-    dec_ir := io.icb.rsp.payload.ins    
-    dec_pc := io.icb.rsp.payload.pc
+
+  when(stall) {
+    dec_ir := dec_ir
+    dec_pc := dec_pc
+    inc := False
   } otherwise {
-    dec_ir := Misc.NOP
-    dec_pc := U(0)
+    when(io.icb.rsp.fire) {
+      dec_ir := io.icb.rsp.payload.ins    
+      dec_pc := io.icb.rsp.payload.pc
+      inc := True
+    } otherwise {
+      dec_ir := Misc.NOP
+      dec_pc := U(0)
+      inc := False
+    }
+
   }
-  
+
 
   io.c2d.rs1 := dec_ic.rs1
   io.c2d.rs2 := dec_ic.rs2
@@ -161,12 +170,14 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
     (BranchCond.GE, BranchCond.GEU) -> !alu_less
   )
 
-  next_pc := exe_ic.pc_next_sel.mux(
-    PCNextSel.seq -> pc_plus_4,
+  load_pc := exe_ic.pc_next_sel.mux(
+    PCNextSel.seq -> pc,
     PCNextSel.jalr -> io.d2c.alu_ret.asUInt,
     PCNextSel.jal -> io.d2c.pcpi,
-    PCNextSel.br -> Mux(should_br, io.d2c.pcpi, exe_pc + 4)
+    PCNextSel.br -> Mux(should_br, io.d2c.pcpi, pc)
   )
+
+  should_load_pc := exe_ic.pc_next_sel =/= PCNextSel.seq
 
 
 
