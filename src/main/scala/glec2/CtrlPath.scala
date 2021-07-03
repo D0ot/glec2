@@ -111,7 +111,7 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
 
   pc := next_pc
   io.icb.cmd.payload.pc := next_pc
-  io.icb.cmd.valid := rest_done && !stall
+  io.icb.cmd.valid := rest_done 
 
   // ID stage
   val dec_ir = Reg(Bits(32 bits)) init(Misc.NOP)
@@ -135,7 +135,6 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
     }
 
   }
-
 
   io.c2d.rs1 := dec_ic.rs1
   io.c2d.rs2 := dec_ic.rs2
@@ -207,11 +206,17 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   val dec_use_rs1 = dec_ic.alu_op1_sel === ALUOp1Sel.reg
   val dec_use_rs2 = (dec_ic.alu_op2_sel === ALUOp2Sel.reg) || (dec_ic.dwen)
   
-  stall :=
-    ((exe_ic.rd === dec_ic.rs1) && (dec_ic.rs1 =/= U(0)) && dec_use_rs1) ||
-    ((exe_ic.rd === dec_ic.rs2) && (dec_ic.rs2 =/= U(0)) && dec_use_rs2) || 
-    ((mem_ic.rd === dec_ic.rs1) && (dec_ic.rs1 =/= U(0)) && dec_use_rs1) ||
-    ((mem_ic.rd === dec_ic.rs2) && (dec_ic.rs2 =/= U(0)) && dec_use_rs2) ||
-    ((wb_ic.rd === dec_ic.rs1) && (dec_ic.rs1 =/= U(0)) && dec_use_rs1) ||
-    ((wb_ic.rd === dec_ic.rs2) && (dec_ic.rs2 =/= U(0)) && dec_use_rs2)
+  if(!conf.bypass) {
+    stall :=
+      ((exe_ic.rd === dec_ic.rs1) && (dec_ic.rs1 =/= U(0)) && dec_use_rs1) ||
+      ((exe_ic.rd === dec_ic.rs2) && (dec_ic.rs2 =/= U(0)) && dec_use_rs2) || 
+      ((mem_ic.rd === dec_ic.rs1) && (dec_ic.rs1 =/= U(0)) && dec_use_rs1) ||
+      ((mem_ic.rd === dec_ic.rs2) && (dec_ic.rs2 =/= U(0)) && dec_use_rs2) ||
+      ((wb_ic.rd === dec_ic.rs1) && (dec_ic.rs1 =/= U(0)) && dec_use_rs1) ||
+      ((wb_ic.rd === dec_ic.rs2) && (dec_ic.rs2 =/= U(0)) && dec_use_rs2)
+  } else {
+    stall := 
+      ((exe_ic.rd === dec_ic.rs1) && (dec_ic.rs1 =/= U(0)) && dec_use_rs1 && exe_ic.is_load) ||
+      ((exe_ic.rd === dec_ic.rs2) && (dec_ic.rs2 =/= U(0)) && dec_use_rs2 && exe_ic.is_load)
+  }
 }

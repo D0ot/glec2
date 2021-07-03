@@ -145,6 +145,7 @@ case class InstructionCtrl(implicit conf : CoreParams) extends Bundle{
 
   val load_type = LoadType()
   val store_type = StoreType()
+  val is_load = Bool()
   val dwen = Bool()
 
   val invalid = Bool()
@@ -176,6 +177,7 @@ object InstructionCtrl {
 
     ins_ctrl.load_type := LoadType.word
     ins_ctrl.store_type := StoreType.word
+    ins_ctrl.is_load := False
     ins_ctrl.dwen := False
 
     ins_ctrl.invalid := False
@@ -214,6 +216,7 @@ object InstructionCtrl {
       ins_ctrl.imm := ins_ctrl.pre_imm.i_sext
       ins_ctrl.wb_sel := WriteBackSel.mem
       ins_ctrl.load_type.assignFromBits(ins_ctrl.funct3)
+      ins_ctrl.is_load := True
 
     } elsewhen(ins === InsOpcode.S_BASE) {
       ins_ctrl.alu_op2_sel := ALUOp2Sel.imm
