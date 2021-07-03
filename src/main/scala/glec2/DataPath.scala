@@ -107,7 +107,7 @@ case class DataPath (implicit conf : CoreParams) extends Component {
 
   
   mem_alu_ret := alu.io.result
-  mem_pcpi := pcpi
+  mem_pcpi := exe_pcpi
   mem_wdat := exe_wdat
   mem_pc := exe_pc
 
@@ -139,7 +139,7 @@ case class DataPath (implicit conf : CoreParams) extends Component {
       ForwordSel.exe -> ( io.c2d.fwd1_wb_sel.mux(
         WriteBackSel.alu -> (alu.io.result),
         WriteBackSel.mem -> (B(0)), // can not occur
-        WriteBackSel.pcpi -> (pcpi.asBits),
+        WriteBackSel.pcpi -> (exe_pcpi.asBits),
         WriteBackSel.pp4 -> ((exe_pc + U(4)).asBits)
       )),
       ForwordSel.mem -> ( io.c2d.fwd1_wb_sel.mux(
@@ -156,7 +156,7 @@ case class DataPath (implicit conf : CoreParams) extends Component {
       ForwordSel.exe -> ( io.c2d.fwd2_wb_sel.mux(
         WriteBackSel.alu -> (alu.io.result),
         WriteBackSel.mem -> (B(0)), // can not occur
-        WriteBackSel.pcpi -> (pcpi.asBits),
+        WriteBackSel.pcpi -> (exe_pcpi.asBits),
         WriteBackSel.pp4 -> ((exe_pc + U(4)).asBits)
       )),
       ForwordSel.mem -> ( io.c2d.fwd2_wb_sel.mux(

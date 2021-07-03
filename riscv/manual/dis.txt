@@ -1,0 +1,170 @@
+
+a.out:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+00000000 <start>:
+   0:	00000113          	li	x2,0
+   4:	00000193          	li	x3,0
+   8:	00000213          	li	x4,0
+   c:	00001e63          	bnez	x0,28 <data_hazard>
+  10:	00110113          	addi	x2,x2,1
+  14:	00118193          	addi	x3,x3,1
+  18:	004000ef          	jal	x1,1c <myfunc>
+
+0000001c <myfunc>:
+  1c:	0ff00313          	li	x6,255
+  20:	0dd00393          	li	x7,221
+  24:	00008067          	ret
+
+00000028 <data_hazard>:
+  28:	00100093          	li	x1,1
+  2c:	00108113          	addi	x2,x1,1
+  30:	00110193          	addi	x3,x2,1
+  34:	00118213          	addi	x4,x3,1
+  38:	003100b3          	add	x1,x2,x3
+  3c:	00208233          	add	x4,x1,x2
+  40:	001201b3          	add	x3,x4,x1
+  44:	00418133          	add	x2,x3,x4
+  48:	003100b3          	add	x1,x2,x3
+
+0000004c <data_hazard_mem>:
+  4c:	00000093          	li	x1,0
+  50:	00408113          	addi	x2,x1,4
+  54:	00410193          	addi	x3,x2,4
+  58:	00418213          	addi	x4,x3,4
+  5c:	0ff00293          	li	x5,255
+  60:	0050a023          	sw	x5,0(x1)
+  64:	fff28293          	addi	x5,x5,-1
+  68:	00512023          	sw	x5,0(x2)
+  6c:	fff28293          	addi	x5,x5,-1
+  70:	0051a023          	sw	x5,0(x3)
+  74:	fff28293          	addi	x5,x5,-1
+  78:	00522023          	sw	x5,0(x4) # 0 <start>
+  7c:	fff28293          	addi	x5,x5,-1
+  80:	00522223          	sw	x5,4(x4) # 4 <start+0x4>
+  84:	fff28293          	addi	x5,x5,-1
+  88:	00522423          	sw	x5,8(x4) # 8 <start+0x8>
+  8c:	fff28293          	addi	x5,x5,-1
+  90:	00522623          	sw	x5,12(x4) # c <start+0xc>
+  94:	fff28293          	addi	x5,x5,-1
+  98:	00522823          	sw	x5,16(x4) # 10 <start+0x10>
+  9c:	fff28293          	addi	x5,x5,-1
+  a0:	0000a303          	lw	x6,0(x1)
+  a4:	00012303          	lw	x6,0(x2)
+  a8:	0001a303          	lw	x6,0(x3)
+  ac:	00022303          	lw	x6,0(x4) # 0 <start>
+  b0:	00422303          	lw	x6,4(x4) # 4 <start+0x4>
+  b4:	00822303          	lw	x6,8(x4) # 8 <start+0x8>
+  b8:	00c22303          	lw	x6,12(x4) # c <start+0xc>
+  bc:	01022303          	lw	x6,16(x4) # 10 <start+0x10>
+
+000000c0 <do_lu>:
+  c0:	000ff037          	lui	x0,0xff
+  c4:	000010b7          	lui	x1,0x1
+  c8:	00002137          	lui	x2,0x2
+  cc:	00500113          	li	x2,5
+  d0:	000031b7          	lui	x3,0x3
+  d4:	00102023          	sw	x1,0(x0) # 0 <start>
+  d8:	00200023          	sb	x2,0(x0) # 0 <start>
+  dc:	00002283          	lw	x5,0(x0) # 0 <start>
+
+000000e0 <do_auipc>:
+  e0:	00000017          	auipc	x0,0x0
+  e4:	00001097          	auipc	x1,0x1
+  e8:	00002117          	auipc	x2,0x2
+  ec:	00003197          	auipc	x3,0x3
+
+000000f0 <do_addi>:
+  f0:	00000013          	nop
+  f4:	00a08093          	addi	x1,x1,10 # 10ee <failed+0xefe>
+  f8:	01410113          	addi	x2,x2,20 # 20fc <failed+0x1f0c>
+  fc:	01e18193          	addi	x3,x3,30 # 310a <failed+0x2f1a>
+
+00000100 <do_add>:
+ 100:	00000013          	nop
+ 104:	fff08093          	addi	x1,x1,-1
+ 108:	ffe10113          	addi	x2,x2,-2
+ 10c:	ffd18193          	addi	x3,x3,-3
+
+00000110 <do_ori>:
+ 110:	0ff06013          	ori	x0,x0,255
+ 114:	0010e093          	ori	x1,x1,1
+ 118:	00216113          	ori	x2,x2,2
+ 11c:	0031e193          	ori	x3,x3,3
+
+00000120 <do_xori>:
+ 120:	0ff04013          	xori	x0,x0,255
+ 124:	0010c093          	xori	x1,x1,1
+ 128:	00214113          	xori	x2,x2,2
+ 12c:	0031c193          	xori	x3,x3,3
+ 130:	ed1ff26f          	jal	x4,0 <start>
+ 134:	0ff07013          	zext.b	x0,x0
+ 138:	0010f093          	andi	x1,x1,1
+ 13c:	00217113          	andi	x2,x2,2
+ 140:	0031f193          	andi	x3,x3,3
+ 144:	00000013          	nop
+ 148:	00000013          	nop
+ 14c:	00000013          	nop
+ 150:	00000013          	nop
+ 154:	000010b7          	lui	x1,0x1
+ 158:	00001117          	auipc	x2,0x1
+ 15c:	008001ef          	jal	x3,164 <jal_label>
+ 160:	00000663          	beqz	x0,16c <jump_jal>
+
+00000164 <jal_label>:
+ 164:	00018067          	jr	x3
+ 168:	08000463          	beqz	x0,1f0 <failed>
+
+0000016c <jump_jal>:
+ 16c:	08100263          	beq	x0,x1,1f0 <failed>
+ 170:	00101463          	bne	x0,x1,178 <bne_succ>
+ 174:	00c00093          	li	x1,12
+
+00000178 <bne_succ>:
+ 178:	0020a633          	slt	x12,x1,x2
+ 17c:	0020b5b3          	sltu	x11,x1,x2
+ 180:	00b60633          	add	x12,x12,x11
+ 184:	00200593          	li	x11,2
+ 188:	00c58463          	beq	x11,x12,190 <slt_sltu_succ>
+ 18c:	06000263          	beqz	x0,1f0 <failed>
+
+00000190 <slt_sltu_succ>:
+ 190:	00100213          	li	x4,1
+ 194:	00200293          	li	x5,2
+ 198:	00524463          	blt	x4,x5,1a0 <blt_succ>
+ 19c:	04000a63          	beqz	x0,1f0 <failed>
+
+000001a0 <blt_succ>:
+ 1a0:	0042d463          	bge	x5,x4,1a8 <bge_succ>
+ 1a4:	04000663          	beqz	x0,1f0 <failed>
+
+000001a8 <bge_succ>:
+ 1a8:	01000313          	li	x6,16
+ 1ac:	0ff00393          	li	x7,255
+ 1b0:	00732023          	sw	x7,0(x6)
+ 1b4:	00032403          	lw	x8,0(x6)
+ 1b8:	00838463          	beq	x7,x8,1c0 <sl_succ>
+ 1bc:	02000a63          	beqz	x0,1f0 <failed>
+
+000001c0 <sl_succ>:
+ 1c0:	123450b7          	lui	x1,0x12345
+ 1c4:	54321137          	lui	x2,0x54321
+ 1c8:	002081b3          	add	x3,x1,x2
+ 1cc:	40110233          	sub	x4,x2,x1
+ 1d0:	0020f2b3          	and	x5,x1,x2
+ 1d4:	0020e333          	or	x6,x1,x2
+ 1d8:	0020c3b3          	xor	x7,x1,x2
+ 1dc:	00500113          	li	x2,5
+ 1e0:	00209433          	sll	x8,x1,x2
+ 1e4:	800000b7          	lui	x1,0x80000
+ 1e8:	00215493          	srli	x9,x2,0x2
+
+000001ec <loop>:
+ 1ec:	00000063          	beqz	x0,1ec <loop>
+
+000001f0 <failed>:
+ 1f0:	deadb6b7          	lui	x13,0xdeadb
+ 1f4:	1ef00693          	li	x13,495
+ 1f8:	fe000ce3          	beqz	x0,1f0 <failed>

@@ -1,7 +1,6 @@
 start:
-    li x2, 0x0
-    li x3, 0x0
-    li x4, 0x0
+    auipc x2, 1
+    addi x2, x2, 1024
 
     bne x0, x0, data_hazard
     
