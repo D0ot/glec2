@@ -41,6 +41,7 @@ bin/
 *.bin
 /riscv/dis.txt
 *.out
+*.o
 
 
 simWorkspace/
