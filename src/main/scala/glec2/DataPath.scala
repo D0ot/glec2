@@ -50,10 +50,22 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   val exe_imm = Reg(Bits(conf.xlen bits))
   val exe_wdat = Reg(Bits(conf.xlen bits))
 
+
+  val reg1_bypassed = Bits(conf.xlen bits)
+  val reg2_bypassed = Bits(conf.xlen bits)
+
   exe_imm := io.c2d.imm
-  exe_wdat := regFile.io.rs2_data
+  exe_wdat := reg2_bypassed
 
+  exe_alu_op1 := io.c2d.alu_op1_sel.mux(
+      ALUOp1Sel.reg -> reg1_bypassed,
+      ALUOp1Sel.zero -> B(0, conf.xlen bits)
+  )
 
+  exe_alu_op2 := io.c2d.alu_op2_sel.mux(
+      ALUOp2Sel.reg -> reg2_bypassed,
+      ALUOp2Sel.imm -> io.c2d.imm
+    )
 
   val alu = ALU()
 
@@ -102,20 +114,9 @@ case class DataPath (implicit conf : CoreParams) extends Component {
 
   regFile.io.wdata := wb_dat
 
-    val alu_op1_no_bypass = io.c2d.alu_op1_sel.mux(
-      ALUOp1Sel.reg -> regFile.io.rs1_data,
-      ALUOp1Sel.zero -> B(0, conf.xlen bits)
-    )
-
-    val alu_op2_no_bypass = io.c2d.alu_op2_sel.mux(
-      ALUOp2Sel.reg -> regFile.io.rs2_data,
-      ALUOp2Sel.imm -> io.c2d.imm
-    )
-
-
   if(conf.bypass) {
-    exe_alu_op1 := io.c2d.fwd1_sel.mux(
-      ForwordSel.none -> (alu_op1_no_bypass),
+    reg1_bypassed := io.c2d.fwd1_sel.mux(
+      ForwordSel.none -> (regFile.io.rs1_data),
       ForwordSel.exe -> ( io.c2d.fwd1_wb_sel.mux(
         WriteBackSel.alu -> (alu.io.result),
         WriteBackSel.mem -> (B(0)), // can not occur
@@ -130,8 +131,9 @@ case class DataPath (implicit conf : CoreParams) extends Component {
       )),
       ForwordSel.wb -> (wb_dat)
     )
-    exe_alu_op2 := io.c2d.fwd2_sel.mux(
-      ForwordSel.none -> (alu_op2_no_bypass),
+
+    reg2_bypassed := io.c2d.fwd2_sel.mux(
+      ForwordSel.none -> (regFile.io.rs2_data),
       ForwordSel.exe -> ( io.c2d.fwd2_wb_sel.mux(
         WriteBackSel.alu -> (alu.io.result),
         WriteBackSel.mem -> (B(0)), // can not occur
@@ -147,8 +149,8 @@ case class DataPath (implicit conf : CoreParams) extends Component {
       ForwordSel.wb -> (wb_dat)
     )
   } else {
-    exe_alu_op1 := alu_op1_no_bypass
-    exe_alu_op2 := alu_op2_no_bypass
+    reg1_bypassed := regFile.io.rs1_data
+    reg2_bypassed := regFile.io.rs2_data
   }
 
 }

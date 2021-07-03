@@ -113,10 +113,6 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   }
 
 
-  // Forwarding
-  val fwd1_sel = Bool()
-  val fwd2_sel = Bool()
-
   // IF stage
   // it will be high after reset
   val rest_done = RegNext(True) init(False)
