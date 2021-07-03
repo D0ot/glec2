@@ -114,7 +114,6 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   val should_jalr = Bool()
   val should_branch = Bool()
 
-
   // IF stage
   // it will be high after reset
   val rest_done = RegNext(True) init(False)
@@ -161,6 +160,9 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   io.c2d.imm := dec_ic.imm
   io.c2d.dec_pc := dec_pc
 
+  io.c2d.alu_op1_sel := dec_ic.alu_op1_sel
+  io.c2d.alu_op2_sel := dec_ic.alu_op2_sel
+
   // EXE stage
   val exe_ir = Reg(Bits(conf.xlen bits)) init(Misc.NOP)
   exe_ir := Mux(stall, Misc.NOP, dec_ir)
@@ -171,8 +173,6 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   val exe_ic = Reg(InstructionCtrl()) init(InstructionCtrl(conf, Misc.NOP, U(0)))
   exe_ic := Mux(stall, InstructionCtrl(conf, Misc.NOP, U(0)), dec_ic)
 
-  io.c2d.alu_op1_sel := exe_ic.alu_op1_sel
-  io.c2d.alu_op2_sel := exe_ic.alu_op2_sel
   io.c2d.alu_opcode := exe_ic.alu_opcode
   io.c2d.ins_bit30 := exe_ic.ins_bit30
   io.c2d.do_sub := exe_ic.alu_do_sub

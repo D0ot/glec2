@@ -53,6 +53,8 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   regFile.io.waddr := io.c2d.rd
   regFile.io.wen := io.c2d.reg_wen
 
+  regFile.io.dm_wen := False
+
   val reg1_bypassed = Bits(conf.xlen bits)
   val reg2_bypassed = Bits(conf.xlen bits)
 
@@ -82,7 +84,7 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   exe_alu_op2 := io.c2d.alu_op2_sel.mux(
       ALUOp2Sel.reg -> reg2_bypassed,
       ALUOp2Sel.imm -> io.c2d.imm
-    )
+  )
 
   val alu = ALU()
 

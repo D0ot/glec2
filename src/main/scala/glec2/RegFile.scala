@@ -13,7 +13,7 @@ case class RegFileIO(implicit val conf: CoreParams) extends Bundle {
   val dm_addr = in UInt(5 bits)
   val dm_rdata = out Bits(conf.xlen bits)
   val dm_wdata = in Bits(conf.xlen bits)
-  val dm_en = in Bool()
+  val dm_wen = in Bool()
 
   val waddr = in UInt(5 bits)
   val wdata = in Bits(conf.xlen bits)
@@ -29,7 +29,7 @@ case class RegFile(implicit val conf : CoreParams) extends Component {
     regFile(io.waddr) := io.wdata
   };
   
-  when(io.dm_en && (io.dm_addr =/= U"0")) {
+  when(io.dm_wen && (io.dm_addr =/= U"0")) {
     regFile(io.dm_addr) := io.dm_wdata
   }
 
