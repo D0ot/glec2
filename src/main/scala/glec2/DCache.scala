@@ -49,10 +49,10 @@ case class DCache(implicit conf : CoreParams) extends Component {
 
   val byte_to_write = io.dcb.wdata(7 downto 0)
 
-  io.dcb.rdata := byte3.readAsync(real_addr) ## 
-    byte2.readAsync(real_addr) ## 
-    byte1.readAsync(real_addr) ## 
-    byte0.readAsync(real_addr)
+  io.dcb.rdata := byte3.readSync(real_addr) ## 
+    byte2.readSync(real_addr) ## 
+    byte1.readSync(real_addr) ## 
+    byte0.readSync(real_addr)
 
 
   when(io.dcb.wen) {
