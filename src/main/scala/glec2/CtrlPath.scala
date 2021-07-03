@@ -165,13 +165,13 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
 
   // EXE stage
   val exe_ir = Reg(Bits(conf.xlen bits)) init(Misc.NOP)
-  exe_ir := Mux(stall, Misc.NOP, dec_ir)
+  exe_ir := Mux(stall || should_branch, Misc.NOP, dec_ir)
 
   val exe_pc = Reg(UInt(conf.pcWidth bits)) init(conf.pcInitVal)
-  exe_pc := Mux(stall, U(0), dec_pc)
+  exe_pc := Mux(stall || should_branch, U(0), dec_pc)
 
   val exe_ic = Reg(InstructionCtrl()) init(InstructionCtrl(conf, Misc.NOP, U(0)))
-  exe_ic := Mux(stall, InstructionCtrl(conf, Misc.NOP, U(0)), dec_ic)
+  exe_ic := Mux(stall || should_branch, InstructionCtrl(conf, Misc.NOP, U(0)), dec_ic)
 
   io.c2d.alu_opcode := exe_ic.alu_opcode
   io.c2d.ins_bit30 := exe_ic.ins_bit30
