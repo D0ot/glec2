@@ -25,7 +25,7 @@ case class Data2CtrlIO (implicit conf : CoreParams) extends Bundle with IMasterS
   // pc plus imm
   val dec_pcpi = UInt(conf.pcWidth bits)
   // pc plus reg
-  val dec_pcpr = UInt(conf.pcWidth bits)
+  val dec_immpr = UInt(conf.pcWidth bits)
   
   // EXE stage
   val alu_ret = Bits(conf.xlen bits)
@@ -34,7 +34,7 @@ case class Data2CtrlIO (implicit conf : CoreParams) extends Bundle with IMasterS
 
   def asMaster(): Unit = {
     out(dec_pcpi)
-    out(dec_pcpr)
+    out(dec_immpr)
     out(alu_ret)
     out(exe_pcpi)
   }
@@ -63,8 +63,8 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   val pcpi = io.c2d.dec_pc + io.c2d.imm.asUInt
   io.d2c.dec_pcpi := pcpi
 
-  val pcpr = io.c2d.dec_pc + reg1_bypassed.asUInt
-  io.d2c.dec_pcpr := pcpr
+  val immpr = io.c2d.imm.asUInt + reg1_bypassed.asUInt
+  io.d2c.dec_immpr := immpr
 
   val exe_alu_op1 = Reg(Bits(conf.xlen bits))
   val exe_alu_op2 = Reg(Bits(conf.xlen bits))

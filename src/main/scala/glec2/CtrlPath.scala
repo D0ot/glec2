@@ -225,7 +225,7 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   when(should_jal === True) {
     load_pc := io.d2c.dec_pcpi
   } elsewhen(should_jalr === True) {
-    load_pc := io.d2c.dec_pcpr
+    load_pc := io.d2c.dec_immpr
   } elsewhen(should_branch === True) {
     load_pc := io.d2c.exe_pcpi
   } otherwise {
