@@ -205,6 +205,7 @@ object InstructionCtrl {
 
     } elsewhen(ins === InsOpcode.B_BASE) {
       // result of ALU can be used to determine if we can branch
+      ins_ctrl.alu_opcode := ALUOpcode.SLT
       ins_ctrl.alu_do_sub := True
       ins_ctrl.imm := ins_ctrl.pre_imm.b_sext
       ins_ctrl.bc.assignFromBits(ins_ctrl.funct3)
