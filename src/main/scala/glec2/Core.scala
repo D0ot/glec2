@@ -28,7 +28,7 @@ class GlecCore(implicit conf : CoreParams) extends Component{
   val icache = ICache()
   val dcache = DCache()
 
-  dataPath.io.c2d <> ctrlPath.io.c2d
+  ctrlPath.io.c2d <> dataPath.io.c2d
   dataPath.io.d2c <> ctrlPath.io.d2c
 
   ctrlPath.io.icb <> icache.io.icb

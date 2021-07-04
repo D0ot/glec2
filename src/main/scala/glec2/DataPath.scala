@@ -9,6 +9,7 @@ case class DCacheBus (implicit conf : CoreParams) extends Bundle with IMasterSla
   val rdata = Bits(conf.xlen bits)
   val wdata = Bits(conf.xlen bits)
   val store_type = StoreType()
+  val load_type = LoadType()
 
   def asMaster(): Unit = {
     out (addr)
@@ -16,6 +17,7 @@ case class DCacheBus (implicit conf : CoreParams) extends Bundle with IMasterSla
     out (wdata)
     out (store_type)
     in (rdata)
+    out (load_type)
   }
 }
 
@@ -46,6 +48,8 @@ case class DataPath (implicit conf : CoreParams) extends Component {
     val d2c = master (Data2CtrlIO())
     val c2d = slave (Ctrl2DataIO())
   }
+
+
 
   val regFile = RegFile()
   regFile.io.rs1_addr := io.c2d.rs1
@@ -104,6 +108,7 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   val mem_wdat = Reg(Bits(conf.xlen bits))
   val mem_pc = Reg(UInt(conf.pcWidth bits))
   io.dcb.store_type := io.c2d.store_type
+  io.dcb.load_type := io.c2d.load_type
 
   
   mem_alu_ret := alu.io.result
@@ -123,10 +128,41 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   val wb_pc = Reg(UInt(conf.xlen bits))
   wb_pc := mem_pc
   val wb_dat = Bits(conf.xlen bits)
+  
+  val wb_mem_addr = wb_alu_ret
+
+  def sign_width_process(dat : Bits, load_type : SpinalEnumCraft[LoadType.type]):Bits = {
+
+    def uext(dat : Bits) = B(0, (32 - dat.getWidth) bits) ## dat
+    def sext(dat : Bits) = B((32 - dat.getWidth - 1 downto 0) -> dat.msb) ## dat
+    load_type.mux(
+        LoadType.word -> (dat),
+        LoadType.ubyte -> wb_mem_addr(1 downto 0).mux(
+          B(3) -> uext(dat(31 downto 24)),
+          B(2) -> uext(dat(23 downto 16)),
+          B(1) -> uext(dat(15 downto 8)),
+          B(0) -> uext(dat(7 downto 0))
+          ),
+        LoadType.sbyte -> wb_mem_addr(1 downto 0).mux(
+          B(3) -> sext(dat(31 downto 24)),
+          B(2) -> sext(dat(23 downto 16)),
+          B(1) -> sext(dat(15 downto 8)),
+          B(0) -> sext(dat(7 downto 0))
+          ),
+        LoadType.uhalf -> wb_mem_addr(1).mux(
+          False -> uext(dat(15 downto 0)),
+          True -> uext(dat(31 downto 16))
+          ),
+        LoadType.shalf -> wb_mem_addr(1).mux(
+          False -> sext(dat(15 downto 0)),
+          True -> sext(dat(31 downto 16))
+          )
+      )
+  }
 
   wb_dat := io.c2d.wb_sel.mux(
     WriteBackSel.alu -> wb_alu_ret,
-    WriteBackSel.mem -> io.dcb.rdata,
+    WriteBackSel.mem -> sign_width_process(io.dcb.rdata, io.c2d.load_type),
     WriteBackSel.pcpi -> wb_pcpi.asBits,
     WriteBackSel.pp4 -> (wb_pc + U(4, conf.pcWidth bits)).asBits
   )

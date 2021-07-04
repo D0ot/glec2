@@ -1,12 +1,29 @@
 start:
-    auipc x2, 1
-    addi x2, x2, 1024
+    la x1, 0x44332211
+    sw x1, 0(x0)
+    la x1, 0x88776655
+    sw x1, 4(x0)
+    la x1, 0xccbbaa99
+    sw x1, 8(x0)
 
-    bne x0, x0, data_hazard
-    
-    addi x2, x2, 1
-    addi x3, x3, 1
-    jal myfunc
+    lb x3, 0(x0)
+    lb x4, 1(x0)
+    lb x5, 2(x0)
+    lb x6, 3(x0)
+
+    lb x7, 4(x0)
+    lb x8, 5(x0)
+    lb x9, 6(x0)
+    lb x10, 7(x0)
+
+    lb x11, 8(x0)
+    lb x12, 9(x0)
+    lb x13, 10(x0)
+    lb x14, 11(x0)
+
+
+mylbu:
+    j mylbu
 
 myfunc:
     li x6, 0xff

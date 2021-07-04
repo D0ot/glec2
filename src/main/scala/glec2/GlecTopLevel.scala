@@ -21,7 +21,7 @@ object GlecTopLevel {
       .withWave
       .compile(new GlecCore)
       .doSim { dut =>
-        dut.clockDomain.get.forkStimulus(100)
+        dut.clockDomain.get.forkStimulus(1000)
         for(i <- 0 until 5000) {
           dut.clockDomain.get.waitFallingEdge()
         }

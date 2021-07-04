@@ -119,11 +119,11 @@ case class Ctrl2DataIO(implicit conf : CoreParams) extends Bundle with IMasterSl
 
     out(wen)
     out(store_type)
+    out(load_type)
 
     out(rd)
     out(reg_wen)
     out(wb_sel)
-    out(load_type)
   }
 }
 
