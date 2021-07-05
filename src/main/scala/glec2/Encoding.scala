@@ -242,7 +242,8 @@ object InstructionCtrl {
         ((ins_ctrl.alu_opcode === ALUOpcode.ADD) && ins_ctrl.ins_bit30)
 
     } otherwise {
-      ins_ctrl.invalid := True
+      ins_ctrl.reg_wen := False
+      ins_ctrl.invalid := False
     }
 
     ins_ctrl

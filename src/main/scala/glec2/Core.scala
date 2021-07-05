@@ -4,6 +4,8 @@ import spinal.core._
 import spinal.lib._
 
 import spinal.lib.bus.amba4.axilite.AxiLite4
+import spinal.lib.soc.pinsec.Pinsec
+import spinal.lib.cpu.riscv.impl.InstructionBusKind
 
 
 case class GlecCoreInspect(implicit conf : CoreParams) extends Bundle with IMasterSlave{

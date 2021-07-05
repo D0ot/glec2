@@ -47,6 +47,8 @@ case class DataPath (implicit conf : CoreParams) extends Component {
     val dcb = master (DCacheBus())
     val d2c = master (Data2CtrlIO())
     val c2d = slave (Ctrl2DataIO())
+
+    val data2pm = master(PerfMonitorDataIO())
   }
 
 
@@ -206,6 +208,12 @@ case class DataPath (implicit conf : CoreParams) extends Component {
   } else {
     reg1_bypassed := regFile.io.rs1_data
     reg2_bypassed := regFile.io.rs2_data
+  }
+
+
+  val perf_monitor = new Area {
+    // TODO
+    io.data2pm.dcache_wait := False
   }
 
 }

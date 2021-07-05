@@ -136,6 +136,8 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
     val d2c = slave (Data2CtrlIO())
 
     val inspect = master (CtrlInspect())
+
+    val ctrl2pm = master (PerfMonitorCtrlIO())
   }
 
   val should_jal = Bool()
@@ -331,16 +333,22 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
       ((wb_ic.rd === dec_ic.rs2) && (dec_ic.rs2 =/= U(0)) && dec_use_rs2)
   }
 
-  io.inspect.if_pc := pc
-  io.inspect.dec_pc := dec_pc
-  io.inspect.exe_pc := exe_pc
-  io.inspect.mem_pc := mem_pc
-  io.inspect.wb_pc := wb_pc
+  val inpsect = new Area {
 
-  io.inspect.dec_ir := dec_ir
-  io.inspect.exe_ir := exe_ir
-  io.inspect.mem_ir := mem_ir 
-  io.inspect.wb_ir := wb_ir
+    io.inspect.if_pc := pc
+    io.inspect.dec_pc := dec_pc
+    io.inspect.exe_pc := exe_pc
+    io.inspect.mem_pc := mem_pc
+    io.inspect.wb_pc := wb_pc
 
+    io.inspect.dec_ir := dec_ir
+    io.inspect.exe_ir := exe_ir
+    io.inspect.mem_ir := mem_ir 
+    io.inspect.wb_ir := wb_ir
+  }
+  
+  val perf_monitor = new Area {
+
+  }
 
 }

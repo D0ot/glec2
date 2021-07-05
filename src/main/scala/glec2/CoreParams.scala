@@ -12,4 +12,6 @@ case class CoreParams(xlen : Int, rv64: Boolean){
   val pcInitVal = 0;
 
   val bypass = true; 
+
+  val pmWidth = 64;
 }
