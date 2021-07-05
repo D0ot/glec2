@@ -155,6 +155,9 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
   val load_pc = UInt()
   val should_load_pc = Bool()
 
+  // throw the next instruction fetch from icache
+  val throw_next = Reg(False)
+
   val next_pc = Mux(should_load_pc, load_pc, 
         Mux(inc, pc + U(4), pc))
 
