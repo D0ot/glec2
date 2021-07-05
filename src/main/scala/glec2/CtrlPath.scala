@@ -172,8 +172,8 @@ case class CtrlPath(implicit conf : CoreParams) extends Component {
     inc := False
   } otherwise {
     when(io.icb.rsp.fire && !should_load_pc) {
-      dec_ir := io.icb.rsp.payload.ins
-      dec_pc := io.icb.rsp.payload.pc
+      dec_ir := io.icb.rsp.ins
+      dec_pc := io.icb.rsp.pc
       inc := True
     } otherwise {
       dec_ir := Misc.NOP

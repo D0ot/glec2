@@ -35,13 +35,17 @@ object HexReader {
     intArray
   }
 
-  def loadInsToUInt(hexFilePath:String):Seq[UInt] = {
+  def loadInsToUInt(hexFilePath:String, len : Int):Seq[UInt] = {
     def int2LongBitwise(int:Int):Long = {
       val bitMask:Long = 0xffffffffL
       int.toLong & bitMask
     }
 
-    val intArray = HexReader.readHexFile2IntArray(hexFilePath)
+    var intArray = HexReader.readHexFile2IntArray(hexFilePath)
+    
+    if(intArray.length < len) {
+      intArray = intArray ++ (for(i <- 0 until (len - intArray.length)) yield {13})
+    }
 
     for(i <- 0 until intArray.length) yield {
       val tmpLong = int2LongBitwise(intArray(i))

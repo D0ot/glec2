@@ -30,7 +30,7 @@ case class ICache(implicit conf : CoreParams) extends Component {
   }
   val insPath = "./riscv/program.bin"
   //val icache = Mem(Bits(conf.xlen bits), conf.l1cacheSize)
-  val icache = Mem(UInt(conf.xlen bits), HexReader.loadInsToUInt(insPath))
+  val icache = Mem(UInt(conf.xlen bits), HexReader.loadInsToUInt(insPath, conf.l1cacheSize))
 
   val pc = Reg(UInt(conf.pcWidth bits)) init(U(0))
   
@@ -39,11 +39,10 @@ case class ICache(implicit conf : CoreParams) extends Component {
 
   val transfered = RegNext(io.icb.cmd.fire) init(False)
   val rdat = Bits(conf.xlen bits)
-  val mem_access  = icache.readSync((io.icb.cmd.payload.pc |>> 2).resized, io.icb.cmd.valid).asBits
 
   when(io.icb.cmd.fire) {
-    pc := io.icb.cmd.payload.pc
-    rdat := mem_access
+    pc := io.icb.cmd.pc
+    rdat := icache.readSync((io.icb.cmd.payload.pc |>> 2).resized, io.icb.cmd.valid).asBits
   } otherwise {
     rdat := B(0)
   }
